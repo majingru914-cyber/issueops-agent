@@ -1,1 +1,21 @@
-"""IssueOps 记忆包，持久化能力将在后续阶段实现。"""
+"""IssueOps SQLite Persistent Memory 公共入口。"""
+
+from memory.schemas import (
+    PersistedTask,
+    StateSnapshot,
+    TaskMetadata,
+    TaskStatus,
+    TraceEvent,
+)
+from memory.sqlite_store import PersistenceError, SQLiteTaskStore, StoreClosedError
+
+__all__ = [
+    "PersistedTask",
+    "PersistenceError",
+    "SQLiteTaskStore",
+    "StateSnapshot",
+    "StoreClosedError",
+    "TaskMetadata",
+    "TaskStatus",
+    "TraceEvent",
+]

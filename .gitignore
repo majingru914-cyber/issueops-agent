@@ -27,6 +27,12 @@ Thumbs.db
 # 日志
 *.log
 
+# 本地 Persistent Memory
+data/*.db
+data/*.db-*
+*.sqlite
+*.sqlite3
+
 # 构建产物
 build/
 dist/

@@ -4,7 +4,7 @@ from typing import Any, NotRequired, Required, TypedDict
 
 
 class AgentState(TypedDict):
-    """Stage 06 Reviewer / Reflection / Re-plan 权威运行时状态。"""
+    """Stage 07 仍唯一权威的进程内 Working Memory。"""
 
     user_query: Required[str]
     task_id: NotRequired[str]

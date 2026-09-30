@@ -63,7 +63,7 @@ def _summarize_result(tool_name: str, data: Any) -> str:
         )
     if tool_name == "read_file":
         content = str(data.get("content", ""))
-        preview = " ".join(content.split())[:240]
+        preview = " ".join(content.split())[:240].rstrip()
         return (
             f"已读取 {data.get('path', '')}，得到 {len(content)} 个字符，"
             f"truncated={bool(data.get('truncated'))}；内容摘要：{preview}"

@@ -29,6 +29,23 @@ def test_successful_tool_result_becomes_traceable_evidence() -> None:
     assert "真实内容" in evidence["summary"]
 
 
+def test_read_file_summary_does_not_end_with_truncated_whitespace() -> None:
+    """固定长度预览不得以空白结尾，避免 Draft grounding 逐字比较误判。"""
+
+    content = f"{'x' * 239} 后续内容"
+    update = collect_evidence(
+        result_state(
+            ToolResult(
+                success=True,
+                tool_name="read_file",
+                data={"path": "sample.py", "content": content, "truncated": False},
+            )
+        )
+    )
+
+    assert not update["evidence"][0]["summary"].endswith(" ")
+
+
 def test_failed_tool_result_becomes_execution_error() -> None:
     """失败结果不得伪造 Evidence，而应进入 errors。"""
 

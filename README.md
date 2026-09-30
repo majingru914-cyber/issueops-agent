@@ -6,10 +6,12 @@ IssueOps Agent 是一个基于 Python 和 LangGraph 的软件研发任务自主�
 Agent。项目最终将支持任务分析、仓库检查、工具执行、证据收集、审查、
 反思和重新规划。
 
-当前仓库已经实现完整的单 Agent 核心闭环。Planner 生成结构化 Tool 调用，
-Executor 通过统一 ToolRuntime 执行本地 Repository Tool 和只读 GitHub Tool；
-Evidence 形成 Draft Answer 后，由确定性 Reviewer 判断完成度。Review Fail 会
-进入 Reflection，并由 Re-plan 只追加缺失步骤后重新执行。
+当前仓库已经实现完整的单 Agent 核心闭环与 SQLite Persistent Memory。Planner
+生成结构化 Tool 调用，Executor 通过统一 ToolRuntime 执行本地 Repository Tool
+和只读 GitHub Tool；Evidence 形成 Draft Answer 后，由确定性 Reviewer 判断完成度。
+Review Fail 会进入 Reflection，并由 Re-plan 只追加缺失步骤后重新执行。运行时
+`AgentState` 仍是唯一权威 Working Memory，SQLite 只保存任务、状态快照和执行
+trace 的持久化副本。
 
 ## 项目目标
 
@@ -89,7 +91,7 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 
 ## 当前状态
 
-**Current Status: Stage 06 — Reviewer / Reflection / Re-plan**
+**Current Status: Stage 07 — Working Memory + SQLite Persistent Memory**
 
 当前已实现：
 
@@ -124,6 +126,14 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 - 复用 `PlanStep` 的增量 Re-plan，并保留全部旧 Evidence、Error 与 trace；
 - `MAX_REFLECTIONS = 2` 默认推理循环上限；
 - Review Pass、Reflection Recovery、Reflection Exhaustion 和 Tool Budget 交互路径。
+- 以 `AgentState` 为唯一权威状态的 Working Memory；
+- 标准库 `sqlite3` 实现的 `SQLiteTaskStore`，数据库路径可配置；
+- `tasks`、`state_snapshots`、`execution_traces` 三表及稳定 sequence 索引；
+- `created`、`running`、`completed`、`failed`、`partial` 任务状态；
+- 节点级状态快照，以及 Tool、Retry、Fallback、Review、Reflection、Re-plan trace；
+- JSON-only 序列化、显式损坏 JSON 错误和敏感键值脱敏；
+- 关闭并重开 Store 后的任务、最新状态、历史和 trace 查询；
+- CLI 默认写入 `data/issueops.db`，并支持 `--load-task` 检查历史任务。
 
 Planner 是 Tool 选择和参数的权威来源；Executor 不从自然语言重新猜测 Tool，
 也不实现 Retry loop。Retry 与 Fallback 只存在于唯一的 `ToolRuntime.execute()`
@@ -153,6 +163,25 @@ MAX_REFLECTIONS = Review Fail 后的 Reflection / Re-plan 上限
 Reviewer 和 Reflection 不调用 ToolRuntime；Re-plan 也不执行 Tool，只生成现有
 `PlanStep` Contract。所有新增步骤仍由 Executor 和唯一 ToolRuntime 执行。
 
+Persistent Memory 位于核心闭环外围：
+
+```text
+User Request
+→ AgentRunner 生成 task_id 并创建任务
+→ LangGraph / AgentState（唯一权威运行时状态）
+   ├─ 节点 update 原样返回 Graph
+   └─ TaskRecorder → SQLiteTaskStore
+                     ├─ tasks
+                     ├─ state_snapshots
+                     └─ execution_traces
+→ Final Answer
+→ completed / partial；未处理异常 → failed
+```
+
+启用或禁用 Store 不会改变 Analyze、Plan、Execute、Review、Reflection 或 Re-plan
+的节点输入、输出和路由。`task_id` 在 `AgentRunner` 启动时生成，Retry、Fallback、
+Reflection 和 Re-plan 全程复用同一个值。
+
 GitHub Tool 仅执行读取操作，不会修改 Issue、发表评论、创建 PR 或写入仓库。
 
 ## 项目结构
@@ -170,13 +199,17 @@ issueops-agent/
 │   ├── reflection.py   # Reflection 与次数上限
 │   ├── replanner.py    # 增量 Re-plan
 │   ├── reviewer.py     # 确定性 Reviewer
+│   ├── runner.py       # 任务生命周期与可选持久化协调
 │   ├── schemas.py      # Pydantic 结构化模型
 │   └── state.py        # LangGraph 运行时状态
 ├── api/                # 后续阶段使用
 ├── docs/               # 项目文档
 ├── eval/               # 后续阶段使用
 ├── examples/           # 后续阶段使用
-├── memory/             # 后续阶段使用
+├── memory/
+│   ├── recorder.py     # Graph update 到快照与 trace 的投影
+│   ├── schemas.py      # Task、Snapshot 与 Trace model
+│   └── sqlite_store.py # SQLite Schema、事务与查询
 ├── tests/              # 自动化测试
 ├── tools/
 │   ├── base.py         # BaseTool 与 ToolResult
@@ -233,6 +266,31 @@ python -m pip install -r requirements.txt
 ```bash
 python main.py "分析项目结构"
 ```
+
+运行成功后默认写入：
+
+```text
+data/issueops.db
+```
+
+可使用参数或环境变量覆盖数据库路径：
+
+```bash
+python main.py --database local/memory.db "分析项目结构"
+```
+
+```text
+ISSUEOPS_DB_PATH=local/memory.db
+```
+
+按输出中的 `task_id` 检查持久化任务：
+
+```bash
+python main.py --load-task <task_id>
+```
+
+该命令返回 Task metadata、最新 State、按 sequence 排列的 State history 和
+execution trace；未知任务返回明确的非零退出码。
 
 CLI 会输出包含以下字段的 JSON：
 
@@ -314,6 +372,41 @@ result = runtime.execute(
 
 自动化测试使用 `httpx.MockTransport`，不访问公网，也不要求真实 Token。
 
+## Persistent Memory
+
+`SQLiteTaskStore` 的主要接口为：
+
+```python
+from memory import SQLiteTaskStore, TaskStatus
+
+with SQLiteTaskStore("data/issueops.db") as store:
+    store.create_task(task_id, user_query)
+    store.save_task(task_id, state, TaskStatus.RUNNING)
+    store.save_state(task_id, "planned", state)
+    store.save_trace(task_id, "review", review_payload)
+    task = store.load_task(task_id)
+    latest_state = store.load_latest_state(task_id)
+    history = store.list_state_history(task_id)
+    trace = store.list_trace(task_id)
+```
+
+数据库 Schema：
+
+| Table | 主要列 | Key / Index |
+| --- | --- | --- |
+| `tasks` | `task_id`, `user_query`, `task_type`, `goal`, `status`, `final_answer`, Review/Retry/Reflection/Tool 计数、时间戳 | `task_id` 主键 |
+| `state_snapshots` | `task_id`, `sequence`, `stage`, `state_json`, `created_at` | `(task_id, sequence)` 唯一约束和索引 |
+| `execution_traces` | `task_id`, `sequence`, `event_type`, `step_id`, `payload_json`, `created_at` | `(task_id, sequence)` 唯一约束和索引 |
+
+状态历史与 trace 均按 sequence 排序，不依赖时间戳猜测先后。典型状态阶段包括
+`created`、`analyzed`、`planned`、`executed`、`evidence_collected`、`drafted`、
+`reviewed`、`reflected`、`replanned` 和 `finalized`。
+
+持久化边界只接受 JSON-safe 数据，不使用 pickle。`token`、`secret`、`password`、
+`authorization`、`credential` 和 `api_key` 等敏感键会在写入前替换为
+`[REDACTED]`，常见 Bearer 与 GitHub Token 字符串也会脱敏。SQLite 文件、WAL/SHM
+旁文件和其他本地数据库格式已加入 `.gitignore`。
+
 ## 测试
 
 在仓库根目录运行：
@@ -331,10 +424,11 @@ python -m pytest -v
 - Stage 04：Plan-and-Execute、Evidence 和确定性最终回答；
 - Stage 05：统一错误分类、Retry、Timeout、Fallback、执行预算和结构化日志；
 - Stage 06：Reviewer、Reflection、增量 Re-plan 与完整核心 Agent 闭环；
-- Stage 07 及后续阶段：逐步加入持久化 Memory 和 Evaluation。
+- Stage 07：Working Memory、SQLite Persistent Memory、历史与 trace 查询；
+- Stage 08 及后续阶段：逐步加入 Evaluation 等能力。
 
-当前尚未实现 Persistent Memory、Evaluation Benchmark、FastAPI、Async API、
-Docker 或 Multi-Agent。README 中的后续能力仅表示规划，不代表已经实现。
+当前尚未实现 Evaluation Benchmark、FastAPI、Async API、Docker 或 Multi-Agent。
+README 中的后续能力仅表示规划，不代表已经实现。
 
 ## 已知可靠性边界
 
@@ -349,4 +443,10 @@ Docker 或 Multi-Agent。README 中的后续能力仅表示规划，不代表已
   false negative；
 - Re-plan 只支持现有已知 Evidence 缺口，无法为未知业务目标临时发明新 Tool；
 - Review、Reflection、Plan 与 Evidence history 均保存在 AgentState，虽受硬上限
-  保护，仍会随循环增加状态体积。
+  保护，仍会随循环增加状态体积；
+- 当前 Store 面向单机同步 MVP。单进程内 sequence 写入具有事务保护，但没有提供
+  多进程写入协调、分布式锁或服务端数据库语义；
+- 每个有意义节点保存完整 State snapshot，便于恢复和审计，但任务量或 Evidence
+  很大时数据库会持续增长，当前没有自动归档与压缩；
+- `--load-task` 用于恢复读取与检查，不会自动从历史中间节点续跑 Graph；
+- SQLite 同步 I/O 与 Agent 同线程执行，极高写入量下会增加节点延迟。

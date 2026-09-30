@@ -16,6 +16,8 @@
   timeout、确定性一级 Fallback、attempt trace、`MAX_TOOL_CALLS` 和结构化日志。
 - Stage 06：完成结构化 Reviewer、Draft/Final 分离、Reflection、增量 Re-plan、
   `MAX_REFLECTIONS`、Review history 和完整核心 Agent 闭环。
+- Stage 07：完成 Working Memory 边界、`SQLiteTaskStore`、任务生命周期、状态快照、
+  execution trace、重启查询、CLI 自动持久化和 `--load-task`。
 
 ## 当前边界
 
@@ -93,10 +95,30 @@ max_reflections = 2
 `retry_count` 统计同一 Tool Step 的 Runtime Retry；`reflection_count` 统计
 Review Fail 后的推理与增量 Re-plan，两者完全分离。
 
-## 待开始
+Stage 07 不修改上述推理状态契约。`AgentState` 仍是唯一权威 Working Memory；
+`AgentRunner` 在任务开始时生成稳定 `task_id`，`TaskRecorder` 只观察节点 update，
+并通过统一 `SQLiteTaskStore` 写入：
 
-- Stage 07：Persistent Memory。
+```text
+tasks
+state_snapshots ORDER BY sequence
+execution_traces ORDER BY sequence
+```
 
-当前没有实现持久化、Evaluation、FastAPI、Async API、Docker、GitHub 写操作或
+任务状态为：
+
+```text
+created → running → completed | partial | failed
+```
+
+默认 CLI 数据库为 `data/issueops.db`，可使用 `--database` 或
+`ISSUEOPS_DB_PATH` 覆盖。Persistent Memory 关闭时，Agent 推理与最终结果语义保持
+不变。
+
+## 下一阶段
+
+- Stage 08：Evaluation（尚未开始）。
+
+当前没有实现 Evaluation、FastAPI、Async API、Docker、GitHub 写操作或
 Multi-Agent。Reviewer 与 Reflection 均不直接执行 Tool；Stage 05 Retry 语义未被
-Stage 06 Reflection 改变。
+Stage 06 Reflection 或 Stage 07 Persistence 改变。

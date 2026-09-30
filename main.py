@@ -3,13 +3,14 @@
 import argparse
 import json
 import logging
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import ValidationError
 
-from agent.graph import build_agent_graph
+from agent.runner import run_agent
 from agent.schemas import (
     Evidence,
     ExecutionError,
@@ -20,6 +21,7 @@ from agent.schemas import (
     ToolResultRecord,
 )
 from tools.runtime import build_tool_runtime
+from memory import PersistenceError, SQLiteTaskStore
 
 
 def configure_output_encoding() -> None:
@@ -42,7 +44,39 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(description="运行 IssueOps Agent 最小工作流。")
     parser.add_argument("user_query", nargs="?", help="需要分析的软件研发任务。")
+    parser.add_argument(
+        "--load-task",
+        metavar="TASK_ID",
+        help="读取已持久化任务及其状态历史和执行 trace。",
+    )
+    parser.add_argument(
+        "--database",
+        type=Path,
+        help="SQLite 文件路径；默认使用 data/issueops.db。",
+    )
     return parser
+
+
+def format_persisted_task(store: SQLiteTaskStore, task_id: str) -> str | None:
+    """格式化任务元数据、最近状态、状态历史和 trace。"""
+
+    task = store.load_task(task_id)
+    if task is None:
+        return None
+    result = {
+        "task": task.metadata.model_dump(mode="json"),
+        "latest_state": task.latest_state,
+        "state_history": [
+            {
+                "sequence": item.sequence,
+                "stage": item.stage,
+                "created_at": item.created_at.isoformat(),
+            }
+            for item in store.list_state_history(task_id)
+        ],
+        "trace": [item.model_dump(mode="json") for item in store.list_trace(task_id)],
+    }
+    return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 def format_result(final_state: dict[str, object]) -> str:
@@ -120,22 +154,37 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    if args.user_query is None:
+    if args.load_task and args.user_query is not None:
+        print("错误：--load-task 不能与用户请求同时使用。", file=sys.stderr)
+        return 2
+
+    if args.user_query is None and not args.load_task:
         parser.print_usage(sys.stderr)
         print("错误：必须提供用户请求。", file=sys.stderr)
         return 2
 
-    user_query = args.user_query.strip()
-    if not user_query:
+    user_query = args.user_query.strip() if args.user_query is not None else ""
+    if args.user_query is not None and not user_query:
         print("错误：用户请求不能为空。", file=sys.stderr)
         return 2
 
     try:
-        runtime = build_tool_runtime(Path.cwd())
-        graph = build_agent_graph(runtime)
-        final_state = graph.invoke({"user_query": user_query})
-        print(format_result(final_state))
-    except (ValueError, ValidationError) as error:
+        database_path = args.database or Path(
+            os.environ.get("ISSUEOPS_DB_PATH", "data/issueops.db")
+        )
+        with SQLiteTaskStore(database_path) as store:
+            if args.load_task:
+                persisted = format_persisted_task(store, args.load_task)
+                if persisted is None:
+                    print(f"错误：任务不存在：{args.load_task}", file=sys.stderr)
+                    return 1
+                print(persisted)
+                return 0
+
+            runtime = build_tool_runtime(Path.cwd())
+            final_state = run_agent(user_query, runtime, store=store)
+            print(format_result(final_state))
+    except (PersistenceError, ValueError, ValidationError) as error:
         print(f"错误：{error}", file=sys.stderr)
         return 1
 
