@@ -63,11 +63,12 @@ class BaseTool(ABC):
         try:
             data = self.run(args)
         except Exception as error:
+            error_code, error_message = self._map_execution_error(error)
             return ToolResult(
                 success=False,
                 tool_name=self.name,
-                error_code="EXECUTION_FAILED",
-                error_message=f"工具执行失败：{error}",
+                error_code=error_code,
+                error_message=error_message,
                 latency_ms=_elapsed_ms(started_at),
             )
 
@@ -81,6 +82,11 @@ class BaseTool(ABC):
     @abstractmethod
     def run(self, args: BaseModel) -> Any:
         """使用经过 Pydantic 验证的参数执行具体逻辑。"""
+
+    def _map_execution_error(self, error: Exception) -> tuple[str, str]:
+        """将执行异常映射为稳定错误码，子类可以按领域扩展。"""
+
+        return "EXECUTION_FAILED", f"工具执行失败：{error}"
 
 
 def _elapsed_ms(started_at: float) -> float:

@@ -2,3 +2,4 @@ langgraph
 pydantic
 python-dotenv
 pytest
+httpx

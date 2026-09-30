@@ -35,13 +35,15 @@ class FailingTool(BaseTool):
         raise RuntimeError("模拟失败")
 
 
-def test_default_registry_exposes_three_distinct_schemas(tmp_path: Path) -> None:
-    """默认 Registry 应提供三个可发现且 Schema 不同的 Tool。"""
+def test_default_registry_exposes_all_distinct_schemas(tmp_path: Path) -> None:
+    """默认 Registry 应提供五个可发现且 Schema 不同的 Tool。"""
 
     registry = build_default_registry(tmp_path)
     metadata = registry.list_tools()
 
     assert [item["name"] for item in metadata] == [
+        "get_github_issue",
+        "get_github_pr",
         "list_directory",
         "read_file",
         "search_code",
@@ -50,6 +52,8 @@ def test_default_registry_exposes_three_distinct_schemas(tmp_path: Path) -> None
         item["name"]: set(item["args_schema"]["properties"]) for item in metadata
     }
     assert schema_properties == {
+        "get_github_issue": {"owner", "repo", "issue_number"},
+        "get_github_pr": {"owner", "repo", "pull_number"},
         "list_directory": {"path"},
         "read_file": {"path", "max_chars"},
         "search_code": {"query", "path", "file_pattern", "max_results"},

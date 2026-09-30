@@ -1,11 +1,14 @@
 """唯一正式 Tool 执行入口与默认 Registry 构建器。"""
 
+import os
 from pathlib import Path
 from time import perf_counter
 from typing import Any
 
 from tools.base import ToolResult
 from tools.filesystem import ListDirectoryTool, ReadFileTool
+from tools.github import GetGitHubIssueTool, GetGitHubPullRequestTool
+from tools.github_client import GitHubClient
 from tools.registry import ToolNotFoundError, ToolRegistry
 from tools.repository import SearchCodeTool
 
@@ -33,17 +36,30 @@ class ToolRuntime:
         return tool.invoke(arguments)
 
 
-def build_default_registry(workspace_root: Path) -> ToolRegistry:
-    """构建包含三个 Stage 02 Repository Tool 的 Registry。"""
+def build_default_registry(
+    workspace_root: Path,
+    github_client: GitHubClient | None = None,
+) -> ToolRegistry:
+    """构建包含本地 Repository Tool 和只读 GitHub Tool 的 Registry。"""
 
     registry = ToolRegistry()
     registry.register(ListDirectoryTool(workspace_root))
     registry.register(ReadFileTool(workspace_root))
     registry.register(SearchCodeTool(workspace_root))
+    shared_github_client = (
+        github_client
+        if github_client is not None
+        else GitHubClient(token=os.getenv("GITHUB_TOKEN"))
+    )
+    registry.register(GetGitHubIssueTool(shared_github_client))
+    registry.register(GetGitHubPullRequestTool(shared_github_client))
     return registry
 
 
-def build_tool_runtime(workspace_root: Path) -> ToolRuntime:
+def build_tool_runtime(
+    workspace_root: Path,
+    github_client: GitHubClient | None = None,
+) -> ToolRuntime:
     """构建可直接使用的默认 ToolRuntime。"""
 
-    return ToolRuntime(build_default_registry(workspace_root))
+    return ToolRuntime(build_default_registry(workspace_root, github_client))
