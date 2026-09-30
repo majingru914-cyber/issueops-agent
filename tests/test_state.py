@@ -7,12 +7,13 @@ from agent.schemas import Evidence, PlanStep, TaskAnalysis, TaskPlan, ToolCallRe
 from agent.state import AgentState
 
 
-def test_agent_state_exposes_stage_04_fields() -> None:
-    """AgentState 应包含最小分析、执行、证据和最终回答字段。"""
+def test_agent_state_exposes_stage_05_fields() -> None:
+    """AgentState 应包含执行、可靠性、证据和最终回答字段。"""
 
     assert AgentState.__required_keys__ == frozenset({"user_query"})
     assert AgentState.__optional_keys__ == frozenset(
         {
+            "task_id",
             "task_type",
             "goal",
             "required_capabilities",
@@ -20,6 +21,9 @@ def test_agent_state_exposes_stage_04_fields() -> None:
             "current_step",
             "tool_calls",
             "tool_results",
+            "execution_attempts",
+            "tool_call_count",
+            "retry_count",
             "evidence",
             "errors",
             "final_answer",

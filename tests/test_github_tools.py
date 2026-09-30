@@ -8,6 +8,7 @@ import pytest
 
 from tools.base import ToolResult
 from tools.github_client import GitHubClient
+from tools.reliability import ReliabilityPolicy
 from tools.runtime import ToolRuntime, build_default_registry
 
 
@@ -46,11 +47,12 @@ PR_PAYLOAD = {
 def build_runtime(
     tmp_path: Path,
     handler: Callable[[httpx.Request], httpx.Response],
+    policy: ReliabilityPolicy | None = None,
 ) -> ToolRuntime:
     """构建共享 Mock GitHubClient 的默认 Runtime。"""
 
     client = GitHubClient(transport=httpx.MockTransport(handler))
-    return ToolRuntime(build_default_registry(tmp_path, client))
+    return ToolRuntime(build_default_registry(tmp_path, client), policy)
 
 
 def test_runtime_gets_normalized_issue(tmp_path: Path) -> None:
@@ -143,12 +145,12 @@ def test_invalid_arguments_do_not_send_http_request(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("status_code", "headers", "expected_code"),
+    ("status_code", "headers", "expected_code", "retryable"),
     [
-        (404, {}, "GITHUB_NOT_FOUND"),
-        (401, {}, "GITHUB_AUTH_ERROR"),
-        (403, {"X-RateLimit-Remaining": "0"}, "RATE_LIMIT"),
-        (500, {}, "GITHUB_API_ERROR"),
+        (404, {}, "GITHUB_NOT_FOUND", False),
+        (401, {}, "GITHUB_AUTH_ERROR", False),
+        (403, {"X-RateLimit-Remaining": "0"}, "RATE_LIMIT", True),
+        (500, {}, "GITHUB_API_ERROR", True),
     ],
 )
 def test_github_http_failures_become_tool_results(
@@ -156,6 +158,7 @@ def test_github_http_failures_become_tool_results(
     status_code: int,
     headers: dict[str, str],
     expected_code: str,
+    retryable: bool,
 ) -> None:
     """GitHub HTTP failure 必须稳定转换为 ToolResult。"""
 
@@ -167,13 +170,19 @@ def test_github_http_failures_become_tool_results(
             request=request,
         )
 
-    result = build_runtime(tmp_path, handler).execute(
+    result = build_runtime(
+        tmp_path,
+        handler,
+        ReliabilityPolicy(max_retries=0),
+    ).execute(
         "get_github_issue",
         {"owner": "octocat", "repo": "missing", "issue_number": 1},
     )
 
     assert result.success is False
     assert result.error_code == expected_code
+    assert result.retryable is retryable
+    assert len(result.attempts) == 1
 
 
 def test_github_timeout_becomes_tool_result(tmp_path: Path) -> None:
@@ -182,13 +191,67 @@ def test_github_timeout_becomes_tool_result(tmp_path: Path) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ReadTimeout("模拟超时", request=request)
 
-    result = build_runtime(tmp_path, handler).execute(
+    result = build_runtime(
+        tmp_path,
+        handler,
+        ReliabilityPolicy(max_retries=0),
+    ).execute(
         "get_github_pr",
         {"owner": "octocat", "repo": "Hello-World", "pull_number": 8},
     )
 
     assert result.success is False
     assert result.error_code == "TIMEOUT"
+    assert result.retryable is True
+
+
+def test_github_rate_limit_uses_bounded_default_retry(tmp_path: Path) -> None:
+    """RATE_LIMIT 默认应重试 2 次，并稳定结束为 Retry Exhaustion。"""
+
+    request_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal request_count
+        request_count += 1
+        return httpx.Response(
+            403,
+            json={"message": "API rate limit exceeded"},
+            headers={"X-RateLimit-Remaining": "0"},
+            request=request,
+        )
+
+    result = build_runtime(tmp_path, handler).execute(
+        "get_github_issue",
+        {"owner": "octocat", "repo": "Hello-World", "issue_number": 7},
+    )
+
+    assert request_count == 3
+    assert result.error_code == "MAX_RETRIES_EXCEEDED"
+    assert result.last_error_code == "RATE_LIMIT"
+    assert result.retry_count == 2
+    assert len(result.attempts) == 3
+
+
+def test_github_auth_failure_is_not_retried_by_default(tmp_path: Path) -> None:
+    """GITHUB_AUTH_ERROR 即使默认允许 Retry，也只能发送一次请求。"""
+
+    request_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal request_count
+        request_count += 1
+        return httpx.Response(401, json={"message": "bad credentials"}, request=request)
+
+    result = build_runtime(tmp_path, handler).execute(
+        "get_github_issue",
+        {"owner": "octocat", "repo": "Hello-World", "issue_number": 7},
+    )
+
+    assert request_count == 1
+    assert result.error_code == "GITHUB_AUTH_ERROR"
+    assert result.retryable is False
+    assert result.retry_count == 0
+    assert len(result.attempts) == 1
 
 
 def test_local_and_github_tools_share_one_runtime(tmp_path: Path) -> None:

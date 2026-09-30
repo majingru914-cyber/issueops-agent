@@ -6,9 +6,17 @@ class GitHubApiError(RuntimeError):
 
     error_code = "GITHUB_API_ERROR"
 
-    def __init__(self, message: str, status_code: int | None = None) -> None:
+    retryable = False
+
+    def __init__(
+        self,
+        message: str,
+        status_code: int | None = None,
+        retryable: bool | None = None,
+    ) -> None:
         super().__init__(message)
         self.status_code = status_code
+        self.retryable = self.__class__.retryable if retryable is None else retryable
 
 
 class GitHubAuthenticationError(GitHubApiError):
@@ -21,6 +29,7 @@ class GitHubRateLimitError(GitHubApiError):
     """GitHub API 请求频率达到限制。"""
 
     error_code = "RATE_LIMIT"
+    retryable = True
 
     def __init__(
         self,
@@ -44,3 +53,4 @@ class GitHubRequestTimeoutError(GitHubApiError):
     """GitHub HTTP 请求超时。"""
 
     error_code = "TIMEOUT"
+    retryable = True

@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from tools.base import BaseTool
 from tools.github_client import GitHubClient
 from tools.github_errors import GitHubApiError
+from tools.reliability import ErrorCode
 
 
 OWNER_PATTERN = r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$"
@@ -83,13 +84,20 @@ class _GitHubTool(BaseTool):
     def __init__(self, client: GitHubClient) -> None:
         self.client = client
 
-    def _map_execution_error(self, error: Exception) -> tuple[str, str]:
+    def _map_execution_error(
+        self,
+        error: Exception,
+    ) -> tuple[ErrorCode, str, bool]:
         """把 Client 和响应 Schema 错误转换为稳定 Tool error code。"""
 
         if isinstance(error, GitHubApiError):
-            return error.error_code, str(error)
+            return ErrorCode(error.error_code), str(error), error.retryable
         if isinstance(error, ValidationError):
-            return "GITHUB_API_ERROR", "GitHub API 响应结构不符合预期。"
+            return (
+                ErrorCode.GITHUB_API_ERROR,
+                "GitHub API 响应结构不符合预期。",
+                False,
+            )
         return super()._map_execution_error(error)
 
 

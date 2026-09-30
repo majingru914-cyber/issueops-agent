@@ -2,6 +2,7 @@
 
 from agent.schemas import Evidence, ExecutionError
 from agent.state import AgentState
+from tools.reliability import DEFAULT_MAX_TOOL_CALLS
 
 
 def generate_answer(state: AgentState) -> dict[str, object]:
@@ -39,9 +40,14 @@ def generate_answer(state: AgentState) -> dict[str, object]:
     return {"final_answer": "\n".join(lines)}
 
 
-def has_more_steps(state: AgentState) -> str:
-    """根据游标和计划长度返回条件边名称。"""
+def has_more_steps(
+    state: AgentState,
+    max_tool_calls: int = DEFAULT_MAX_TOOL_CALLS,
+) -> str:
+    """同时根据计划游标和实际 Tool attempt 预算选择下一条边。"""
 
     if state.get("current_step", 0) < len(state.get("plan", [])):
+        if state.get("tool_call_count", 0) >= max_tool_calls:
+            return "budget_exceeded"
         return "execute"
     return "generate_answer"

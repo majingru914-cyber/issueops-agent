@@ -99,3 +99,7 @@ class ExecutionError(BaseModel):
     source: str = Field(min_length=1)
     error_code: str = Field(min_length=1)
     error_message: str = Field(min_length=1)
+    retryable: bool = False
+    last_error_code: str | None = None
+    attempt_count: int = Field(default=0, ge=0)
+    retry_count: int = Field(default=0, ge=0)

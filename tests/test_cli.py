@@ -33,14 +33,19 @@ def test_cli_outputs_plan_and_execute_result() -> None:
 
     assert result.returncode == 0
     assert output["task_type"]
+    assert output["task_id"]
     assert output["goal"]
     assert output["required_capabilities"]
     assert output["plan"]
     assert output["tool_calls"]
     assert output["tool_results"]
+    assert output["tool_call_count"] == len(output["execution_attempts"])
+    assert output["retry_count"] == 0
     assert output["evidence"]
     assert output["errors"] == []
     assert output["final_answer"]
+    assert "event=tool_execute" in result.stderr
+    assert "task_id=" in result.stderr
 
 
 def test_cli_executes_agent_state_multi_step() -> None:
@@ -55,6 +60,8 @@ def test_cli_executes_agent_state_multi_step() -> None:
         "read_file",
     ]
     assert len(output["evidence"]) == 2
+    assert output["tool_call_count"] == 2
+    assert len(output["execution_attempts"]) == 2
     assert "AgentState" in output["final_answer"]
 
 

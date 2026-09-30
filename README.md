@@ -6,9 +6,10 @@ IssueOps Agent 是一个基于 Python 和 LangGraph 的软件研发任务自主�
 Agent。项目最终将支持任务分析、仓库检查、工具执行、证据收集、审查、
 反思和重新规划。
 
-当前仓库已经实现一个 Plan-and-Execute LangGraph。Planner 生成结构化 Tool
-调用，Executor 通过统一 ToolRuntime 执行本地 Repository Tool 和只读 GitHub
-Tool，并将 ToolResult 转换为 Evidence 后生成回答。
+当前仓库已经实现一个带可靠性边界的 Plan-and-Execute LangGraph。Planner 生成
+结构化 Tool 调用，Executor 通过统一 ToolRuntime 执行本地 Repository Tool 和
+只读 GitHub Tool；Runtime 负责错误分类、有限重试、通用超时、确定性 Fallback
+和执行预算，最终 ToolResult 转换为 Evidence 或 Error 后生成回答。
 
 ## 项目目标
 
@@ -38,15 +39,18 @@ User
 → Analyze
 → Plan
 → Execute Tool
+→ Validation
+→ Retry / Timeout / Fallback
 → Collect Evidence
 → More Steps?
 ├─ Yes → Execute Tool
-└─ No  → Generate Answer
+├─ Budget Exhausted → Record Error
+└─ No → Generate Answer
           → Final
 ```
 
-Graph 使用条件边逐步执行有限计划。成功 ToolResult 进入 Evidence，失败结果
-进入 Errors；最终回答只依据这些执行结果生成。
+Graph 使用条件边逐步执行有限计划，同时受 `MAX_TOOL_CALLS` 保护。最终成功的
+ToolResult 进入 Evidence，终态失败进入 Errors；最终回答只依据这些结果生成。
 
 当前 Tool System 链路为：
 
@@ -56,7 +60,12 @@ Tool Request
 → ToolRegistry
 → BaseTool
 → Pydantic Args Schema
-→ Concrete Tool
+→ Execute Attempt with Timeout
+→ Error Classification
+→ Retry Policy
+├─ Retry Same Step
+├─ Deterministic Fallback
+└─ Return
 → ToolResult
 ```
 
@@ -73,7 +82,7 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 
 ## 当前状态
 
-**Current Status: Stage 04 — Plan-and-Execute**
+**Current Status: Stage 05 — Reliability**
 
 当前已实现：
 
@@ -92,9 +101,32 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 - 包含 `tool_name` 和 `tool_args` 的可执行 `PlanStep`；
 - 结构化 Tool Call / Tool Result 记录；
 - `execute_step`、`collect_evidence`、条件循环和 `generate_answer` 节点。
+- 统一 `ErrorCode` 和带 `retryable` 的 `ToolResult`；
+- `ReliabilityPolicy` 对 `max_retries`、`timeout_seconds` 和
+  `max_tool_calls` 设置可配置值与硬上限；
+- 同一 PlanStep 内的有限 Retry，以及 `MAX_RETRIES_EXCEEDED` 终态；
+- 跨平台可测试的同步 Tool wall-clock timeout；
+- 由显式 Tool 映射和允许错误码驱动的一级 Fallback；
+- 区分 logical Tool call 与实际 execution attempt 的完整 trace；
+- `MAX_TOOL_CALLS` Graph 终止保护；
+- 不记录 Tool arguments 或环境变量的结构化 `key=value` 日志。
 
-Planner 是 Tool 选择和参数的权威来源；Executor 不从自然语言重新猜测 Tool。
-Tool 失败会进入 State.errors，当前不会自动 Retry、Fallback 或 Re-plan。
+Planner 是 Tool 选择和参数的权威来源；Executor 不从自然语言重新猜测 Tool，
+也不实现 Retry loop。Retry 与 Fallback 只存在于唯一的 `ToolRuntime.execute()`
+入口；Retry 只重试同一 PlanStep，绝不等同于 Re-plan。
+
+默认可靠性配置为：
+
+```text
+max_retries = 2
+timeout_seconds = 10
+max_tool_calls = 20
+```
+
+`INVALID_ARGUMENT`、`TOOL_NOT_FOUND`、`FILE_NOT_FOUND`、
+`GITHUB_AUTH_ERROR` 和 `GITHUB_NOT_FOUND` 不可重试；`TIMEOUT`、
+`RATE_LIMIT` 与临时 `GITHUB_API_ERROR` 可重试。Retry 耗尽后返回
+`MAX_RETRIES_EXCEEDED`，并通过 `last_error_code` 保留最后原始错误。
 
 GitHub Tool 仅执行读取操作，不会修改 Issue、发表评论、创建 PR 或写入仓库。
 
@@ -126,6 +158,7 @@ issueops-agent/
 │   ├── github_errors.py # GitHub 领域错误
 │   ├── path_utils.py   # 共享 workspace 路径边界
 │   ├── registry.py     # Tool 注册与发现
+│   ├── reliability.py  # 错误码与可靠性策略
 │   ├── repository.py   # search_code
 │   └── runtime.py      # 统一执行入口与默认构建器
 ├── main.py             # CLI 入口
@@ -176,11 +209,15 @@ python main.py "分析项目结构"
 CLI 会输出包含以下字段的 JSON：
 
 - `task_type`
+- `task_id`
 - `goal`
 - `required_capabilities`
 - `plan`
 - `tool_calls`
 - `tool_results`
+- `tool_call_count`
+- `retry_count`
+- `execution_attempts`
 - `evidence`
 - `errors`
 - `final_answer`
@@ -202,8 +239,28 @@ runtime = build_tool_runtime(Path.cwd())
 result = runtime.execute("read_file", {"path": "README.md"})
 ```
 
-所有正式 Tool 调用都返回 `ToolResult`。用户路径必须是 workspace 内的相对
-路径；绝对路径和包含 `..` 的路径会被拒绝。
+所有正式 Tool 调用都返回 `ToolResult`。每次实际 Attempt 保存 `attempt`、
+`task_id`、`step_id`、`tool_name`、`arguments`、`phase`、`success`、
+`error_code` 和 `latency_ms`；
+日志不会输出 `arguments`。用户路径必须是 workspace 内的相对路径；绝对路径
+和包含 `..` 的路径会被拒绝。
+
+可在测试或调用端注入可靠性策略：
+
+```python
+from tools import ReliabilityPolicy, build_tool_runtime
+
+policy = ReliabilityPolicy(
+    max_retries=2,
+    timeout_seconds=10,
+    max_tool_calls=20,
+    fallbacks={"primary_tool": "fallback_tool"},
+)
+runtime = build_tool_runtime(Path.cwd(), policy=policy)
+```
+
+Fallback 只执行一级，并且默认只允许 `TOOL_NOT_FOUND` 或
+`EXECUTION_FAILED` 触发；生产默认没有配置任何 Fallback Tool 映射。
 
 读取公开 GitHub 资源时，`GITHUB_TOKEN` 是可选配置。未设置 Token 时使用
 GitHub 匿名只读请求；设置后以 Bearer header 发送。Token 只从环境变量读取：
@@ -237,6 +294,18 @@ python -m pytest -v
 - Stage 02：统一 Tool Runtime 和本地 Repository Tool；
 - Stage 03：只读 GitHub Issue / PR Tool；
 - Stage 04：Plan-and-Execute、Evidence 和确定性最终回答；
-- Stage 05 及后续阶段：逐步加入 Reliability、审查和反思能力。
+- Stage 05：统一错误分类、Retry、Timeout、Fallback、执行预算和结构化日志；
+- Stage 06 及后续阶段：逐步加入 Reviewer、Reflection 和 Re-plan。
 
-README 中的后续能力仅表示规划，不代表已经实现。
+当前尚未实现 Reviewer、Reflection、Re-plan、Memory、Evaluation、FastAPI、
+Docker 或 Multi-Agent。README 中的后续能力仅表示规划，不代表已经实现。
+
+## 已知可靠性边界
+
+- Retry 没有退避等待，仍可能放大临时服务压力，但受每 Tool 重试硬上限和
+  Agent 全局 Attempt 预算约束；
+- Python 无法安全强制终止正在运行的同步线程，通用 timeout 返回后，超时的
+  daemon worker 可能继续运行；因此有副作用的 Tool 仍需自行提供取消或幂等保障；
+- attempt trace 保存在 AgentState，长计划会增长状态体积，但当前最多保留
+  `MAX_TOOL_CALLS` 条；
+- Fallback 共用原 Tool arguments，仅适用于输入契约兼容的显式 Tool 映射。

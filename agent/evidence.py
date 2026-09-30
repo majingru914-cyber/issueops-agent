@@ -8,7 +8,7 @@ from agent.state import AgentState
 
 
 def collect_evidence(state: AgentState) -> dict[str, object]:
-    """处理最近一次 ToolResult，不执行重试或重新规划。"""
+    """只把 Runtime 最终成功结果转为 Evidence，失败则转为 Error。"""
 
     raw_results = state.get("tool_results", [])
     if not raw_results:
@@ -35,6 +35,10 @@ def collect_evidence(state: AgentState) -> dict[str, object]:
         source=result.tool_name,
         error_code=result.error_code or "EXECUTION_FAILED",
         error_message=result.error_message or "Tool 执行失败。",
+        retryable=result.retryable,
+        last_error_code=result.last_error_code,
+        attempt_count=len(result.attempts),
+        retry_count=result.retry_count,
     )
     return {
         "errors": [

@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import logging
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -20,6 +21,12 @@ def configure_output_encoding() -> None:
         reconfigure = getattr(stream, "reconfigure", None)
         if callable(reconfigure):
             reconfigure(encoding="utf-8", errors="replace")
+
+
+def configure_logging() -> None:
+    """为 CLI 启用可机器解析的稳定 key=value 日志。"""
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -53,6 +60,7 @@ def format_result(final_state: dict[str, object]) -> str:
     ]
     result = {
         **analysis.model_dump(),
+        "task_id": final_state.get("task_id", ""),
         "plan": [step.model_dump() for step in plan.steps],
         "tool_calls": final_state.get("tool_calls", []),
         "tool_results": [
@@ -61,9 +69,17 @@ def format_result(final_state: dict[str, object]) -> str:
                 "tool_name": item.result.tool_name,
                 "success": item.result.success,
                 "error_code": item.result.error_code,
+                "retryable": item.result.retryable,
+                "attempt_count": len(item.result.attempts),
+                "retry_count": item.result.retry_count,
+                "fallback_from": item.result.fallback_from,
+                "last_error_code": item.result.last_error_code,
             }
             for item in tool_results
         ],
+        "tool_call_count": final_state.get("tool_call_count", 0),
+        "retry_count": final_state.get("retry_count", 0),
+        "execution_attempts": final_state.get("execution_attempts", []),
         "evidence": [item.model_dump(exclude={"raw_result"}) for item in evidence],
         "errors": [item.model_dump() for item in errors],
         "final_answer": final_state.get("final_answer", ""),
@@ -75,6 +91,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """运行 CLI，并以退出码表达执行结果。"""
 
     configure_output_encoding()
+    configure_logging()
     parser = build_parser()
     args = parser.parse_args(argv)
 

@@ -88,6 +88,8 @@ def test_runtime_returns_invalid_argument_result(tmp_path: Path) -> None:
 
     assert result.success is False
     assert result.error_code == "INVALID_ARGUMENT"
+    assert result.retryable is False
+    assert len(result.attempts) == 1
 
 
 def test_runtime_returns_tool_not_found_result(tmp_path: Path) -> None:
@@ -101,6 +103,8 @@ def test_runtime_returns_tool_not_found_result(tmp_path: Path) -> None:
     assert result.success is False
     assert result.tool_name == "unknown_tool"
     assert result.error_code == "TOOL_NOT_FOUND"
+    assert result.retryable is False
+    assert len(result.attempts) == 1
 
 
 def test_runtime_returns_failure_for_missing_file(tmp_path: Path) -> None:
@@ -111,7 +115,9 @@ def test_runtime_returns_failure_for_missing_file(tmp_path: Path) -> None:
     result = runtime.execute("read_file", {"path": "missing.txt"})
 
     assert result.success is False
-    assert result.error_code == "EXECUTION_FAILED"
+    assert result.error_code == "FILE_NOT_FOUND"
+    assert result.retryable is False
+    assert len(result.attempts) == 1
     assert "不存在" in result.error_message
 
 

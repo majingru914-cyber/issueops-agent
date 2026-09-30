@@ -41,6 +41,9 @@ def test_executor_runs_repository_tool_and_records_state(tmp_path: Path) -> None
     update = execute_step(state, runtime)
 
     assert update["current_step"] == 1
+    assert update["tool_call_count"] == 1
+    assert update["retry_count"] == 0
+    assert len(update["execution_attempts"]) == 1
     assert update["tool_calls"] == [
         {
             "step_id": 1,
@@ -76,6 +79,8 @@ def test_executor_failure_enters_errors_without_traceback(
     evidence_update = collect_evidence(updated_state)
 
     assert execution_update["current_step"] == 1
+    assert execution_update["tool_call_count"] == 1
+    assert execution_update["retry_count"] == 0
     assert execution_update["tool_results"][0]["result"]["success"] is False
     assert evidence_update["errors"][0]["error_code"] == error_code
     runtime.registry.get("get_github_issue").client.close()

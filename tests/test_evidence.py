@@ -50,5 +50,9 @@ def test_failed_tool_result_becomes_execution_error() -> None:
             "source": "read_file",
             "error_code": "INVALID_ARGUMENT",
             "error_message": "缺少 path。",
+            "retryable": False,
+            "last_error_code": None,
+            "attempt_count": 0,
+            "retry_count": 0,
         }
     ]

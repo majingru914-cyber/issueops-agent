@@ -58,7 +58,10 @@ class GitHubClient:
         except httpx.TimeoutException as error:
             raise GitHubRequestTimeoutError("GitHub API 请求超时。") from error
         except httpx.RequestError as error:
-            raise GitHubApiError(f"GitHub API 网络请求失败：{error}") from error
+            raise GitHubApiError(
+                f"GitHub API 网络请求失败：{error}",
+                retryable=True,
+            ) from error
 
         error_message = _response_message(response)
         if response.status_code == 401:
@@ -91,6 +94,7 @@ class GitHubClient:
             raise GitHubApiError(
                 f"GitHub API 返回 HTTP {response.status_code}：{message}",
                 status_code=response.status_code,
+                retryable=response.status_code >= 500,
             )
 
         try:
