@@ -1,7 +1,7 @@
 [project]
 name = "issueops-agent"
 version = "0.1.0"
-description = "A LangGraph-based autonomous agent for software engineering tasks."
+description = "基于 LangGraph 的软件研发任务自主处理 Agent。"
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]

@@ -4,11 +4,11 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Virtual environment
+# 虚拟环境
 .venv/
 venv/
 
-# Tests
+# 测试
 .pytest_cache/
 .coverage
 htmlcov/
@@ -17,17 +17,17 @@ htmlcov/
 .vscode/
 .idea/
 
-# OS
+# 操作系统
 .DS_Store
 Thumbs.db
 
-# Environment / secrets
+# 环境变量与密钥
 .env
 
-# Logs
+# 日志
 *.log
 
-# Build
+# 构建产物
 build/
 dist/
 *.egg-info/

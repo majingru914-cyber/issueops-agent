@@ -1,4 +1,1 @@
-"""IssueOps memory package.
-
-Persistence implementations will be introduced in later development stages.
-"""
+"""IssueOps 记忆包，持久化能力将在后续阶段实现。"""

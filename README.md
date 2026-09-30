@@ -1,22 +1,21 @@
 # IssueOps Agent
 
-## Overview
+## 项目概述
 
-IssueOps Agent is a LangGraph-based autonomous agent for software engineering
-tasks such as GitHub Issue analysis, repository inspection, tool execution,
-evidence collection, review, reflection and replanning.
+IssueOps Agent 是一个基于 Python 和 LangGraph 的软件研发任务自主处理
+Agent。项目最终将支持任务分析、仓库检查、工具执行、证据收集、审查、
+反思和重新规划。
 
-This repository currently contains only the project foundation. Agent behavior
-and integrations will be implemented incrementally in later stages.
+当前仓库只实现了最小 LangGraph 闭环，后续能力会按阶段逐步加入。
 
-## Goal
+## 项目目标
 
-Build a reliable, locally runnable, and evaluable software-engineering agent
-with a clear architecture and verifiable behavior.
+构建一个可靠、可在本地运行且可评估的软件研发 Agent，并保持架构清晰、
+行为可验证。
 
-## Core Pipeline
+## 核心链路
 
-The planned pipeline is:
+完整规划链路如下：
 
 ```text
 Analyze
@@ -30,73 +29,126 @@ Analyze
 → Final
 ```
 
-## Current Status
+Stage 01 当前已完成的真实链路为：
 
-**Stage 00 — Repository Bootstrap**
+```text
+User
+→ Analyze
+→ Plan
+→ Final
+```
 
-Only the repository structure, dependency declarations, engineering rules, and
-bootstrap tests are present. Tool calling, GitHub Issue analysis, reflection,
-evaluation, API endpoints, and deployment are future work and are not yet
-implemented.
+对应的 LangGraph 为：
 
-## Project Structure
+```text
+START
+→ analyze_task
+→ create_plan
+→ END
+```
+
+这里的 `Final` 表示 CLI 输出最终 State 中经过 Pydantic 验证的任务分析和
+计划，不包含独立的答案生成节点。
+
+## 当前状态
+
+**Current Status: Stage 01 — Minimal LangGraph Loop**
+
+当前已实现：
+
+- 使用 `TypedDict` 定义的最小 `AgentState`；
+- 使用 Pydantic 定义的 `TaskAnalysis`、`PlanStep` 和 `TaskPlan`；
+- 确定性的 `analyze_task` 和 `create_plan` 节点；
+- 基于真实 `StateGraph` 的节点、边、编译与调用；
+- 输出结构化 JSON 的 CLI；
+- 空输入与缺失参数的明确错误处理。
+
+**Tool execution is not implemented yet.**
+
+计划中的 `tool_hint` 只是未来工具能力的提示字段。目前不会调用文件系统、
+仓库搜索、GitHub API 或其他外部工具。
+
+## 项目结构
 
 ```text
 issueops-agent/
-├── agent/          # Future agent package
-├── api/            # Future API package
-├── docs/           # Project documentation
-├── eval/           # Future evaluation assets and reports
-├── examples/       # Usage examples added in later stages
-├── memory/         # Future persistence package
-├── tests/          # Automated tests
-└── tools/          # Future tool package
+├── agent/
+│   ├── analyzer.py     # 任务分析节点
+│   ├── graph.py        # LangGraph 构建与编译
+│   ├── planner.py      # 任务规划节点
+│   ├── schemas.py      # Pydantic 结构化模型
+│   └── state.py        # LangGraph 运行时状态
+├── api/                # 后续阶段使用
+├── docs/               # 项目文档
+├── eval/               # 后续阶段使用
+├── examples/           # 后续阶段使用
+├── memory/             # 后续阶段使用
+├── tests/              # 自动化测试
+├── tools/              # 后续阶段使用
+├── main.py             # CLI 入口
+└── WORK_TODO.md        # 阶段状态与开发边界
 ```
 
-## Requirements
+## 环境要求
 
-- Python 3.12 or newer
-- `venv` support
+- Python 3.12 或更高版本
+- `venv`
 - `pip`
 
-## Setup
+## 安装
 
-Create and activate a virtual environment:
+创建虚拟环境：
 
 ```bash
 python -m venv .venv
 ```
 
-On Windows PowerShell:
+在 Windows PowerShell 中激活：
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-On macOS or Linux:
+在 macOS 或 Linux 中激活：
 
 ```bash
 source .venv/bin/activate
 ```
 
-Install the dependencies:
+安装依赖：
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-## Tests
+## 使用方法
 
-Run the test suite from the repository root:
+运行最小工作流：
 
 ```bash
-python -m pytest
+python main.py "分析项目结构"
 ```
 
-## Development Roadmap
+CLI 会输出包含以下字段的 JSON：
 
-- Stage 00: repository bootstrap
-- Stage 01 onward: introduce the agent workflow in small, tested increments
+- `task_type`
+- `goal`
+- `required_capabilities`
+- `plan`
 
-The implementation roadmap is intentionally prospective; Stage 00 does not
-claim any agent workflow or external integration as complete.
+## 测试
+
+在仓库根目录运行：
+
+```bash
+python -m pytest -v
+```
+
+## 开发路线
+
+- Stage 00：仓库初始化；
+- Stage 01：最小 LangGraph 闭环；
+- Stage 02 及后续阶段：在保持单 Agent 管线可测试的前提下逐步加入工具、
+  证据、审查和反思能力。
+
+README 中的后续能力仅表示规划，不代表已经实现。

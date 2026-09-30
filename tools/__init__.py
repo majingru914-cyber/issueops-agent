@@ -1,4 +1,1 @@
-"""IssueOps tool package.
-
-Tool implementations will be introduced in later development stages.
-"""
+"""IssueOps 工具包，具体工具将在后续阶段实现。"""
