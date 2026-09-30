@@ -6,7 +6,8 @@ IssueOps Agent 是一个基于 Python 和 LangGraph 的软件研发任务自主�
 Agent。项目最终将支持任务分析、仓库检查、工具执行、证据收集、审查、
 反思和重新规划。
 
-当前仓库只实现了最小 LangGraph 闭环，后续能力会按阶段逐步加入。
+当前仓库已经实现最小 LangGraph 闭环，以及一套与 LangGraph 解耦的统一
+Tool System。后续能力会按阶段逐步加入。
 
 ## 项目目标
 
@@ -29,7 +30,7 @@ Analyze
 → Final
 ```
 
-Stage 01 当前已完成的真实链路为：
+当前 LangGraph 链路为：
 
 ```text
 User
@@ -50,9 +51,23 @@ START
 这里的 `Final` 表示 CLI 输出最终 State 中经过 Pydantic 验证的任务分析和
 计划，不包含独立的答案生成节点。
 
+当前 Tool System 链路为：
+
+```text
+Tool Request
+→ ToolRuntime
+→ ToolRegistry
+→ BaseTool
+→ Pydantic Args Schema
+→ Concrete Tool
+→ ToolResult
+```
+
+这两条链路已经存在，但尚未连接。
+
 ## 当前状态
 
-**Current Status: Stage 01 — Minimal LangGraph Loop**
+**Current Status: Stage 02 — Tool System**
 
 当前已实现：
 
@@ -61,12 +76,17 @@ START
 - 确定性的 `analyze_task` 和 `create_plan` 节点；
 - 基于真实 `StateGraph` 的节点、边、编译与调用；
 - 输出结构化 JSON 的 CLI；
-- 空输入与缺失参数的明确错误处理。
+- 空输入与缺失参数的明确错误处理；
+- 统一的 `BaseTool`、`ToolRegistry`、`ToolRuntime` 和 `ToolResult`；
+- Pydantic Tool 输入 Schema 与可发现 metadata；
+- 受 workspace 路径边界保护的 `list_directory`、`read_file`、
+  `search_code`。
 
-**Tool execution is not implemented yet.**
+**Planner is not connected to Tool Runtime yet.**
 
-计划中的 `tool_hint` 只是未来工具能力的提示字段。目前不会调用文件系统、
-仓库搜索、GitHub API 或其他外部工具。
+Planner 中的 `tool_hint` 仍然只是规划字段。当前 Agent 不能自主执行 Tool；
+Tool System 只能通过独立的 `ToolRuntime.execute()` 入口调用。两条链路将在
+Stage 04 — Plan-and-Execute 连接。
 
 ## 项目结构
 
@@ -84,7 +104,13 @@ issueops-agent/
 ├── examples/           # 后续阶段使用
 ├── memory/             # 后续阶段使用
 ├── tests/              # 自动化测试
-├── tools/              # 后续阶段使用
+├── tools/
+│   ├── base.py         # BaseTool 与 ToolResult
+│   ├── filesystem.py   # list_directory 与 read_file
+│   ├── path_utils.py   # 共享 workspace 路径边界
+│   ├── registry.py     # Tool 注册与发现
+│   ├── repository.py   # search_code
+│   └── runtime.py      # 统一执行入口与默认构建器
 ├── main.py             # CLI 入口
 └── WORK_TODO.md        # 阶段状态与开发边界
 ```
@@ -136,6 +162,20 @@ CLI 会输出包含以下字段的 JSON：
 - `required_capabilities`
 - `plan`
 
+独立构建 Tool Runtime：
+
+```python
+from pathlib import Path
+
+from tools import build_tool_runtime
+
+runtime = build_tool_runtime(Path.cwd())
+result = runtime.execute("read_file", {"path": "README.md"})
+```
+
+所有正式 Tool 调用都返回 `ToolResult`。用户路径必须是 workspace 内的相对
+路径；绝对路径和包含 `..` 的路径会被拒绝。
+
 ## 测试
 
 在仓库根目录运行：
@@ -148,7 +188,8 @@ python -m pytest -v
 
 - Stage 00：仓库初始化；
 - Stage 01：最小 LangGraph 闭环；
-- Stage 02 及后续阶段：在保持单 Agent 管线可测试的前提下逐步加入工具、
-  证据、审查和反思能力。
+- Stage 02：统一 Tool Runtime 和本地 Repository Tool；
+- Stage 03 及后续阶段：在保持单 Agent 管线可测试的前提下逐步加入 GitHub
+  Tool、Plan-and-Execute、证据、审查和反思能力。
 
 README 中的后续能力仅表示规划，不代表已经实现。
