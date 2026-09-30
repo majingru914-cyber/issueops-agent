@@ -25,8 +25,8 @@ def run_cli(*arguments: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_cli_outputs_structured_result() -> None:
-    """正常输入应输出包含分析和计划的 JSON。"""
+def test_cli_outputs_plan_and_execute_result() -> None:
+    """正常输入应输出计划、调用、证据和最终回答。"""
 
     result = run_cli("分析项目结构")
     output = json.loads(result.stdout)
@@ -36,6 +36,26 @@ def test_cli_outputs_structured_result() -> None:
     assert output["goal"]
     assert output["required_capabilities"]
     assert output["plan"]
+    assert output["tool_calls"]
+    assert output["tool_results"]
+    assert output["evidence"]
+    assert output["errors"] == []
+    assert output["final_answer"]
+
+
+def test_cli_executes_agent_state_multi_step() -> None:
+    """CLI 应真实执行 search_code 和 read_file 两个步骤。"""
+
+    result = run_cli("查找项目中 AgentState 的定义")
+    output = json.loads(result.stdout)
+
+    assert result.returncode == 0
+    assert [item["tool_name"] for item in output["tool_calls"]] == [
+        "search_code",
+        "read_file",
+    ]
+    assert len(output["evidence"]) == 2
+    assert "AgentState" in output["final_answer"]
 
 
 def test_cli_rejects_missing_input() -> None:

@@ -10,6 +10,8 @@
   `search_code`。
 - Stage 03：完成共享 `GitHubClient`、`get_github_issue`、`get_github_pr`、
   可选环境认证、HTTP timeout、rate-limit 检测和 GitHub API 错误映射。
+- Stage 04：完成可执行 `PlanStep`、Executor、结构化 Tool Call / Result、
+  Evidence、Error、条件步骤循环和基于证据的最终回答。
 
 ## 当前边界
 
@@ -19,10 +21,16 @@
 START
 → analyze_task
 → create_plan
-→ END
+→ execute_step
+→ collect_evidence
+→ more_steps?
+├─ Yes → execute_step
+└─ No  → generate_answer
+          → END
 ```
 
-`tool_hint` 仅为计划字段，不会执行工具。
+Planner 通过 `tool_name` 和 `tool_args` 决定调用，Executor 只负责交给现有
+`ToolRuntime.execute()` 执行。
 
 独立 Tool System 链路为：
 
@@ -36,7 +44,8 @@ Tool Request
 → ToolResult
 ```
 
-LangGraph 与 Tool System 尚未连接。
+成功 ToolResult 进入 Evidence，失败 ToolResult 进入 Errors；当前失败步骤会
+被记录并继续有限计划，不会自动 Retry 或 Re-plan。
 
 当前默认 Registry 包含：
 
@@ -52,8 +61,8 @@ GitHub Tool 当前只读，自动化测试全部使用 Mock HTTP。
 
 ## 待开始
 
-- Stage 04：Plan-and-Execute，届时才连接 Planner 与 Tool Runtime。
+- Stage 05：Reliability，在现有 Runtime 和执行循环上增加受控可靠性能力。
 
-当前没有实现 Planner 自动 Tool execution、Executor、Evidence Collector、
-Retry、Fallback、通用 Runtime Timeout、Reviewer、Reflection、持久化、
-Evaluation、FastAPI、Docker、GitHub 写操作或 Multi-Agent。
+当前没有实现 Retry、Fallback、MAX_TOOL_CALLS、通用 Runtime Timeout、
+Reviewer、Reflection、Re-plan、持久化、Evaluation、FastAPI、Docker、
+GitHub 写操作或 Multi-Agent。

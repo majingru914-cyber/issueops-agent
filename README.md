@@ -6,9 +6,9 @@ IssueOps Agent 是一个基于 Python 和 LangGraph 的软件研发任务自主�
 Agent。项目最终将支持任务分析、仓库检查、工具执行、证据收集、审查、
 反思和重新规划。
 
-当前仓库已经实现最小 LangGraph 闭环，以及一套与 LangGraph 解耦、同时
-支持本地 Repository Tool 和只读 GitHub Tool 的统一 Tool System。后续能力
-会按阶段逐步加入。
+当前仓库已经实现一个 Plan-and-Execute LangGraph。Planner 生成结构化 Tool
+调用，Executor 通过统一 ToolRuntime 执行本地 Repository Tool 和只读 GitHub
+Tool，并将 ToolResult 转换为 Evidence 后生成回答。
 
 ## 项目目标
 
@@ -37,20 +37,16 @@ Analyze
 User
 → Analyze
 → Plan
-→ Final
+→ Execute Tool
+→ Collect Evidence
+→ More Steps?
+├─ Yes → Execute Tool
+└─ No  → Generate Answer
+          → Final
 ```
 
-对应的 LangGraph 为：
-
-```text
-START
-→ analyze_task
-→ create_plan
-→ END
-```
-
-这里的 `Final` 表示 CLI 输出最终 State 中经过 Pydantic 验证的任务分析和
-计划，不包含独立的答案生成节点。
+Graph 使用条件边逐步执行有限计划。成功 ToolResult 进入 Evidence，失败结果
+进入 Errors；最终回答只依据这些执行结果生成。
 
 当前 Tool System 链路为：
 
@@ -72,11 +68,12 @@ ToolRuntime ────┤
                └→ GitHub Tools → GitHubClient → GitHub REST API
 ```
 
-这两条链路已经存在，但尚未连接。
+Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保持独立、
+可单独测试。
 
 ## 当前状态
 
-**Current Status: Stage 03 — GitHub Tools**
+**Current Status: Stage 04 — Plan-and-Execute**
 
 当前已实现：
 
@@ -91,13 +88,13 @@ ToolRuntime ────┤
 - 受 workspace 路径边界保护的 `list_directory`、`read_file`、
   `search_code`；
 - 共享同一个 `GitHubClient` 的 `get_github_issue` 和 `get_github_pr`；
-- GitHub Bearer/匿名只读请求、明确 HTTP timeout、rate-limit 检测和稳定错误映射。
+- GitHub Bearer/匿名只读请求、明确 HTTP timeout、rate-limit 检测和稳定错误映射；
+- 包含 `tool_name` 和 `tool_args` 的可执行 `PlanStep`；
+- 结构化 Tool Call / Tool Result 记录；
+- `execute_step`、`collect_evidence`、条件循环和 `generate_answer` 节点。
 
-**Planner is not connected to Tool Runtime yet.**
-
-Planner 中的 `tool_hint` 仍然只是规划字段。当前 Agent 不能自主执行 Tool；
-Tool System 只能通过独立的 `ToolRuntime.execute()` 入口调用。两条链路将在
-Stage 04 — Plan-and-Execute 连接。
+Planner 是 Tool 选择和参数的权威来源；Executor 不从自然语言重新猜测 Tool。
+Tool 失败会进入 State.errors，当前不会自动 Retry、Fallback 或 Re-plan。
 
 GitHub Tool 仅执行读取操作，不会修改 Issue、发表评论、创建 PR 或写入仓库。
 
@@ -107,7 +104,11 @@ GitHub Tool 仅执行读取操作，不会修改 Issue、发表评论、创建 P
 issueops-agent/
 ├── agent/
 │   ├── analyzer.py     # 任务分析节点
+│   ├── evidence.py     # ToolResult 到 Evidence / Error
+│   ├── executor.py     # 通过 ToolRuntime 执行 PlanStep
+│   ├── generator.py    # 基于 Evidence 生成回答
 │   ├── graph.py        # LangGraph 构建与编译
+│   ├── parsing.py      # GitHub 引用结构提取
 │   ├── planner.py      # 任务规划节点
 │   ├── schemas.py      # Pydantic 结构化模型
 │   └── state.py        # LangGraph 运行时状态
@@ -166,7 +167,7 @@ python -m pip install -r requirements.txt
 
 ## 使用方法
 
-运行最小工作流：
+运行 Plan-and-Execute 工作流：
 
 ```bash
 python main.py "分析项目结构"
@@ -178,6 +179,17 @@ CLI 会输出包含以下字段的 JSON：
 - `goal`
 - `required_capabilities`
 - `plan`
+- `tool_calls`
+- `tool_results`
+- `evidence`
+- `errors`
+- `final_answer`
+
+执行本地多步骤场景：
+
+```bash
+python main.py "查找项目中 AgentState 的定义"
+```
 
 独立构建 Tool Runtime：
 
@@ -224,7 +236,7 @@ python -m pytest -v
 - Stage 01：最小 LangGraph 闭环；
 - Stage 02：统一 Tool Runtime 和本地 Repository Tool；
 - Stage 03：只读 GitHub Issue / PR Tool；
-- Stage 04 及后续阶段：在保持单 Agent 管线可测试的前提下逐步加入
-  Plan-and-Execute、证据、审查和反思能力。
+- Stage 04：Plan-and-Execute、Evidence 和确定性最终回答；
+- Stage 05 及后续阶段：逐步加入 Reliability、审查和反思能力。
 
 README 中的后续能力仅表示规划，不代表已经实现。

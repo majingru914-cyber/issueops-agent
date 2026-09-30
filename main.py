@@ -4,11 +4,13 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 
 from pydantic import ValidationError
 
-from agent.graph import compiled_graph
-from agent.schemas import TaskAnalysis, TaskPlan
+from agent.graph import build_agent_graph
+from agent.schemas import Evidence, ExecutionError, TaskAnalysis, TaskPlan, ToolResultRecord
+from tools.runtime import build_tool_runtime
 
 
 def configure_output_encoding() -> None:
@@ -39,9 +41,32 @@ def format_result(final_state: dict[str, object]) -> str:
         }
     )
     plan = TaskPlan.model_validate({"steps": final_state.get("plan")})
+    evidence = [
+        Evidence.model_validate(item) for item in final_state.get("evidence", [])
+    ]
+    errors = [
+        ExecutionError.model_validate(item) for item in final_state.get("errors", [])
+    ]
+    tool_results = [
+        ToolResultRecord.model_validate(item)
+        for item in final_state.get("tool_results", [])
+    ]
     result = {
         **analysis.model_dump(),
         "plan": [step.model_dump() for step in plan.steps],
+        "tool_calls": final_state.get("tool_calls", []),
+        "tool_results": [
+            {
+                "step_id": item.step_id,
+                "tool_name": item.result.tool_name,
+                "success": item.result.success,
+                "error_code": item.result.error_code,
+            }
+            for item in tool_results
+        ],
+        "evidence": [item.model_dump(exclude={"raw_result"}) for item in evidence],
+        "errors": [item.model_dump() for item in errors],
+        "final_answer": final_state.get("final_answer", ""),
     }
     return json.dumps(result, ensure_ascii=False, indent=2)
 
@@ -64,7 +89,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
     try:
-        final_state = compiled_graph.invoke({"user_query": user_query})
+        runtime = build_tool_runtime(Path.cwd())
+        graph = build_agent_graph(runtime)
+        final_state = graph.invoke({"user_query": user_query})
         print(format_result(final_state))
     except (ValueError, ValidationError) as error:
         print(f"错误：{error}", file=sys.stderr)
