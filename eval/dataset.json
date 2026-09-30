@@ -1,0 +1,376 @@
+{
+  "version": "0.1.0",
+  "cases": [
+    {
+      "id": "repo-001",
+      "category": "repository",
+      "description": "分析固定仓库的目录和 Python 模块。",
+      "scenario": "default",
+      "user_query": "分析项目结构",
+      "expected_task_type": "repository_analysis",
+      "expected_tools": ["list_directory", "search_code"],
+      "expected_tool_args": [
+        {"tool_name": "list_directory", "arguments": {"path": "."}},
+        {"tool_name": "search_code", "arguments": {"query": "class ", "path": "agent", "file_pattern": "*.py"}}
+      ],
+      "required_evidence_sources": ["list_directory", "search_code"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "repo-002",
+      "category": "repository",
+      "description": "定位并读取 AgentState 定义。",
+      "scenario": "default",
+      "user_query": "查找 AgentState 的定义",
+      "expected_task_type": "repository_analysis",
+      "expected_tools": ["search_code", "read_file"],
+      "expected_tool_args": [
+        {"tool_name": "search_code", "arguments": {"query": "AgentState", "path": ".", "file_pattern": "*.py"}},
+        {"tool_name": "read_file", "arguments": {"path": "agent/state.py"}}
+      ],
+      "required_evidence_sources": ["search_code", "read_file"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false,
+      "final_answer_contains": ["AgentState"]
+    },
+    {
+      "id": "repo-003",
+      "category": "repository",
+      "description": "使用生产 Planner 定位 login 相关代码。",
+      "scenario": "default",
+      "user_query": "定位登录问题",
+      "expected_task_type": "issue_investigation",
+      "expected_tools": ["search_code"],
+      "expected_tool_args": [
+        {"tool_name": "search_code", "arguments": {"query": "login", "path": ".", "file_pattern": "*.py"}}
+      ],
+      "required_evidence_sources": ["search_code"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "repo-004",
+      "category": "repository",
+      "description": "概述固定仓库代码模块。",
+      "scenario": "default",
+      "user_query": "概述仓库代码模块",
+      "expected_task_type": "repository_analysis",
+      "expected_tools": ["list_directory", "search_code"],
+      "expected_tool_args": [
+        {"tool_name": "list_directory", "arguments": {"path": "."}},
+        {"tool_name": "search_code", "arguments": {"query": "class ", "path": "agent", "file_pattern": "*.py"}}
+      ],
+      "required_evidence_sources": ["list_directory", "search_code"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "repo-005",
+      "category": "repository",
+      "description": "读取不存在文件并验证结构化失败。",
+      "scenario": "missing_file",
+      "user_query": "读取不存在文件",
+      "expected_task_type": "software_task",
+      "expected_tools": ["read_file"],
+      "expected_tool_args": [
+        {"tool_name": "read_file", "arguments": {"path": "missing.txt"}}
+      ],
+      "required_evidence_sources": [],
+      "expected_error_codes": ["FILE_NOT_FOUND"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "repo-006",
+      "category": "repository",
+      "description": "搜索不存在符号并保留空结果 Evidence。",
+      "scenario": "missing_symbol",
+      "user_query": "定位 MissingWidget 符号",
+      "expected_task_type": "issue_investigation",
+      "expected_tools": ["search_code"],
+      "expected_tool_args": [
+        {"tool_name": "search_code", "arguments": {"query": "MissingWidget", "path": ".", "file_pattern": "*.py"}}
+      ],
+      "required_evidence_sources": ["search_code"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "repo-007",
+      "category": "repository",
+      "description": "拒绝越过 workspace 的路径。",
+      "scenario": "path_escape",
+      "user_query": "验证路径边界",
+      "expected_task_type": "software_task",
+      "expected_tools": ["read_file"],
+      "expected_tool_args": [
+        {"tool_name": "read_file", "arguments": {"path": "../secret.txt"}, "mode": "exact"}
+      ],
+      "required_evidence_sources": [],
+      "expected_error_codes": ["INVALID_ARGUMENT"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "repo-008",
+      "category": "repository",
+      "description": "读取固定 README 文件。",
+      "scenario": "read_readme",
+      "user_query": "读取 README.md",
+      "expected_task_type": "software_task",
+      "expected_tools": ["read_file"],
+      "expected_tool_args": [
+        {"tool_name": "read_file", "arguments": {"path": "README.md"}, "mode": "exact"}
+      ],
+      "required_evidence_sources": ["read_file"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false,
+      "final_answer_contains": ["Sample Repository"]
+    },
+    {
+      "id": "github-001",
+      "category": "github",
+      "description": "通过 MockTransport 查询 GitHub Issue。",
+      "scenario": "github_issue",
+      "user_query": "分析 octocat/Hello-World Issue #7",
+      "expected_task_type": "github_issue_analysis",
+      "expected_tools": ["get_github_issue"],
+      "expected_tool_args": [
+        {"tool_name": "get_github_issue", "arguments": {"owner": "octocat", "repo": "Hello-World", "issue_number": 7}, "mode": "exact"}
+      ],
+      "required_evidence_sources": ["get_github_issue"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false,
+      "final_answer_contains": ["修复离线登录问题"]
+    },
+    {
+      "id": "github-002",
+      "category": "github",
+      "description": "通过 MockTransport 查询 GitHub Pull Request。",
+      "scenario": "github_pr",
+      "user_query": "分析 octocat/Hello-World PR #8",
+      "expected_task_type": "github_pr_analysis",
+      "expected_tools": ["get_github_pr"],
+      "expected_tool_args": [
+        {"tool_name": "get_github_pr", "arguments": {"owner": "octocat", "repo": "Hello-World", "pull_number": 8}, "mode": "exact"}
+      ],
+      "required_evidence_sources": ["get_github_pr"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false,
+      "final_answer_contains": ["增加离线评估"]
+    },
+    {
+      "id": "github-003",
+      "category": "github",
+      "description": "GitHub Issue 404 的确定性错误路径。",
+      "scenario": "github_404",
+      "user_query": "分析 octocat/Hello-World Issue #404",
+      "expected_task_type": "github_issue_analysis",
+      "expected_tools": ["get_github_issue"],
+      "expected_tool_args": [
+        {"tool_name": "get_github_issue", "arguments": {"owner": "octocat", "repo": "Hello-World", "issue_number": 404}, "mode": "exact"}
+      ],
+      "required_evidence_sources": [],
+      "expected_error_codes": ["GITHUB_NOT_FOUND"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "github-004",
+      "category": "github",
+      "description": "GitHub Rate Limit 后有限 Retry 并耗尽。",
+      "scenario": "github_rate_limit",
+      "user_query": "分析 octocat/Hello-World Issue #9",
+      "expected_task_type": "github_issue_analysis",
+      "expected_tools": ["get_github_issue"],
+      "expected_tool_args": [
+        {"tool_name": "get_github_issue", "arguments": {"owner": "octocat", "repo": "Hello-World", "issue_number": 9}, "mode": "exact"}
+      ],
+      "required_evidence_sources": [],
+      "expected_error_codes": ["MAX_RETRIES_EXCEEDED"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": true,
+      "expected_fallback": false
+    },
+    {
+      "id": "reliability-001",
+      "category": "reliability",
+      "description": "第一次 Timeout 后 Retry 成功。",
+      "scenario": "retry_success",
+      "user_query": "测试 Retry 成功",
+      "expected_tools": ["flaky_evaluation_tool"],
+      "expected_tool_args": [
+        {"tool_name": "flaky_evaluation_tool", "arguments": {}, "mode": "exact"}
+      ],
+      "required_evidence_sources": ["flaky_evaluation_tool"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": true,
+      "expected_fallback": false
+    },
+    {
+      "id": "reliability-002",
+      "category": "reliability",
+      "description": "永久 Timeout 导致 Retry Exhaustion。",
+      "scenario": "retry_exhausted",
+      "user_query": "测试 Retry 耗尽",
+      "expected_tools": ["always_timeout_evaluation_tool"],
+      "expected_tool_args": [
+        {"tool_name": "always_timeout_evaluation_tool", "arguments": {}, "mode": "exact"}
+      ],
+      "required_evidence_sources": [],
+      "expected_error_codes": ["MAX_RETRIES_EXCEEDED"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": true,
+      "expected_fallback": false
+    },
+    {
+      "id": "reliability-003",
+      "category": "reliability",
+      "description": "主 Tool 失败后执行确定性 Fallback。",
+      "scenario": "fallback",
+      "user_query": "测试 Fallback",
+      "expected_tools": ["primary_failure_evaluation_tool"],
+      "expected_tool_args": [
+        {"tool_name": "primary_failure_evaluation_tool", "arguments": {}, "mode": "exact"}
+      ],
+      "required_evidence_sources": ["fallback_evaluation_tool"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": false,
+      "expected_fallback": true
+    },
+    {
+      "id": "reliability-004",
+      "category": "reliability",
+      "description": "三步骤计划受 MAX_TOOL_CALLS=2 保护。",
+      "scenario": "max_tool_calls",
+      "user_query": "测试 Tool 调用预算",
+      "expected_tools": ["stable_evaluation_tool", "stable_evaluation_tool"],
+      "expected_tool_args": [
+        {"tool_name": "stable_evaluation_tool", "arguments": {}, "mode": "exact"},
+        {"tool_name": "stable_evaluation_tool", "arguments": {}, "mode": "exact"}
+      ],
+      "required_evidence_sources": ["stable_evaluation_tool"],
+      "expected_error_codes": ["MAX_TOOL_CALLS_EXCEEDED"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "reflection-001",
+      "category": "reflection",
+      "description": "Evidence 完整时首轮 Review 通过。",
+      "scenario": "first_pass",
+      "user_query": "读取 README.md 并形成回答",
+      "expected_tools": ["read_file"],
+      "expected_tool_args": [
+        {"tool_name": "read_file", "arguments": {"path": "README.md"}, "mode": "exact"}
+      ],
+      "required_evidence_sources": ["read_file"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": false,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "reflection-002",
+      "category": "reflection",
+      "description": "缺少 read_file Evidence 后 Reflection Recovery。",
+      "scenario": "reflection_recovery",
+      "user_query": "定位 AgentState 定义并读取对应实现",
+      "expected_task_type": "issue_investigation",
+      "expected_tools": ["search_code", "read_file"],
+      "expected_tool_args": [
+        {"tool_name": "search_code", "arguments": {"query": "AgentState", "path": ".", "file_pattern": "*.py"}},
+        {"tool_name": "read_file", "arguments": {"path": "agent/state.py"}}
+      ],
+      "required_evidence_sources": ["search_code", "read_file"],
+      "expected_status": "completed",
+      "expected_review_passed": true,
+      "expected_reflection": true,
+      "expected_retry": false,
+      "expected_fallback": false,
+      "recovery_eligible": true
+    },
+    {
+      "id": "reflection-003",
+      "category": "reflection",
+      "description": "Reviewer 持续失败并达到 Reflection 上限。",
+      "scenario": "reflection_exhausted",
+      "user_query": "测试 Reflection 上限",
+      "expected_tools": ["stable_evaluation_tool"],
+      "expected_tool_args": [
+        {"tool_name": "stable_evaluation_tool", "arguments": {}, "mode": "exact"}
+      ],
+      "required_evidence_sources": ["stable_evaluation_tool"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": false,
+      "expected_fallback": false
+    },
+    {
+      "id": "reflection-004",
+      "category": "reflection",
+      "description": "Reflection 生成补证步骤但 Tool Budget 阻止执行。",
+      "scenario": "reflection_budget",
+      "user_query": "定位 AgentState 定义并读取对应实现",
+      "expected_task_type": "issue_investigation",
+      "expected_tools": ["search_code"],
+      "expected_tool_args": [
+        {"tool_name": "search_code", "arguments": {"query": "AgentState", "path": ".", "file_pattern": "*.py"}}
+      ],
+      "required_evidence_sources": ["search_code"],
+      "expected_error_codes": ["MAX_TOOL_CALLS_EXCEEDED"],
+      "expected_status": "partial",
+      "expected_review_passed": false,
+      "expected_reflection": true,
+      "expected_retry": false,
+      "expected_fallback": false
+    }
+  ]
+}

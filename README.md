@@ -11,7 +11,8 @@ Agent。项目最终将支持任务分析、仓库检查、工具执行、证据
 和只读 GitHub Tool；Evidence 形成 Draft Answer 后，由确定性 Reviewer 判断完成度。
 Review Fail 会进入 Reflection，并由 Re-plan 只追加缺失步骤后重新执行。运行时
 `AgentState` 仍是唯一权威 Working Memory，SQLite 只保存任务、状态快照和执行
-trace 的持久化副本。
+trace 的持久化副本。独立的 Stage 08 离线评测基准使用 20 个版本化用例
+衡量任务、Tool、Retry、Reflection 和 Recovery 行为。
 
 ## 项目目标
 
@@ -91,7 +92,7 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 
 ## 当前状态
 
-**Current Status: Stage 07 — Working Memory + SQLite Persistent Memory**
+**Current Status: Stage 08 — Agent Evaluation Benchmark**
 
 当前已实现：
 
@@ -134,6 +135,12 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 - JSON-only 序列化、显式损坏 JSON 错误和敏感键值脱敏；
 - 关闭并重开 Store 后的任务、最新状态、历史和 trace 查询；
 - CLI 默认写入 `data/issueops.db`，并支持 `--load-task` 检查历史任务。
+- 严格版本化的 20 用例评测数据集，分类固定为 8/4/4/4；
+- 与 Production Agent 分离的 Pydantic 评测 Schema、评分器和指标计算；
+- 固定 Repository Fixture 与基于 `httpx.MockTransport` 的离线 GitHub Fixture；
+- 用例级异常隔离、失败分类、JSON/Markdown 报告与失败用例文档；
+- 任务成功率、用例通过率、Tool 选择/参数准确率、延迟、Retry、
+  Reflection、Recovery 和可靠性事件指标。
 
 Planner 是 Tool 选择和参数的权威来源；Executor 不从自然语言重新猜测 Tool，
 也不实现 Retry loop。Retry 与 Fallback 只存在于唯一的 `ToolRuntime.execute()`
@@ -204,7 +211,14 @@ issueops-agent/
 │   └── state.py        # LangGraph 运行时状态
 ├── api/                # 后续阶段使用
 ├── docs/               # 项目文档
-├── eval/               # 后续阶段使用
+├── eval/
+│   ├── dataset.json    # 20 个版本化评测用例
+│   ├── evaluator.py    # 用例执行与 CLI
+│   ├── fixtures/       # Repository 与 GitHub 固定 Fixture
+│   ├── metrics.py      # 聚合指标
+│   ├── reporting.py    # JSON、Markdown 和失败文档
+│   ├── schemas.py      # Pydantic 评测 Schema
+│   └── scoring.py      # 最终 AgentState 自动评分
 ├── examples/           # 后续阶段使用
 ├── memory/
 │   ├── recorder.py     # Graph update 到快照与 trace 的投影
@@ -407,6 +421,31 @@ with SQLiteTaskStore("data/issueops.db") as store:
 `[REDACTED]`，常见 Bearer 与 GitHub Token 字符串也会脱敏。SQLite 文件、WAL/SHM
 旁文件和其他本地数据库格式已加入 `.gitignore`。
 
+## Agent Evaluation Benchmark
+
+运行完整离线基准评测：
+
+```bash
+python -m eval.evaluator
+```
+
+调试单个用例：
+
+```bash
+python -m eval.evaluator --case repo-001
+```
+
+默认生成 `eval/reports/evaluation-report.json`、
+`eval/reports/evaluation-report.md` 和 `docs/failure_cases.md`。GitHub 用例全部
+使用 `httpx.MockTransport`，运行时不访问公网，也不需要
+`GITHUB_TOKEN`。
+
+当前基线为 20 个用例通过 19 个，用例通过率 95%，正常任务成功率、
+Tool 选择准确率和 Tool 参数准确率均为 100%。失败用例
+`repo-007` 暴露了路径边界错误分类与数据集期望不一致，Stage 08 保留该真实
+差异，未修改 Production Agent。详细设计、指标分母和局限见
+`docs/evaluation.md`。
+
 ## 测试
 
 在仓库根目录运行：
@@ -425,9 +464,10 @@ python -m pytest -v
 - Stage 05：统一错误分类、Retry、Timeout、Fallback、执行预算和结构化日志；
 - Stage 06：Reviewer、Reflection、增量 Re-plan 与完整核心 Agent 闭环；
 - Stage 07：Working Memory、SQLite Persistent Memory、历史与 trace 查询；
-- Stage 08 及后续阶段：逐步加入 Evaluation 等能力。
+- Stage 08：独立、离线、可重复的 Agent Evaluation Benchmark；
+- Stage 09 及后续阶段：按后续规格继续扩展。
 
-当前尚未实现 Evaluation Benchmark、FastAPI、Async API、Docker 或 Multi-Agent。
+当前尚未实现 FastAPI、Async API、Docker 或 Multi-Agent。
 README 中的后续能力仅表示规划，不代表已经实现。
 
 ## 已知可靠性边界
@@ -450,3 +490,6 @@ README 中的后续能力仅表示规划，不代表已经实现。
   很大时数据库会持续增长，当前没有自动归档与压缩；
 - `--load-task` 用于恢复读取与检查，不会自动从历史中间节点续跑 Graph；
 - SQLite 同步 I/O 与 Agent 同线程执行，极高写入量下会增加节点延迟。
+- 评测数据集只有 20 个确定性 MVP 用例，不代表开放世界任务分布；
+- Repository Fixture 规模较小，GitHub 使用固定 Mock，不覆盖真实网络抖动；
+- 评测延迟受本机负载影响，不应解读为性能 SLA。

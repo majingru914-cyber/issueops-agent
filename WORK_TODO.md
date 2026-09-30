@@ -18,6 +18,8 @@
   `MAX_REFLECTIONS`、Review history 和完整核心 Agent 闭环。
 - Stage 07：完成 Working Memory 边界、`SQLiteTaskStore`、任务生命周期、状态快照、
   execution trace、重启查询、CLI 自动持久化和 `--load-task`。
+- Stage 08：完成独立评测层、20 用例版本化数据集、离线 Fixture、自动评分、
+  聚合指标、失败分类、JSON/Markdown 报告和可重复性验证。
 
 ## 当前边界
 
@@ -115,10 +117,24 @@ created → running → completed | partial | failed
 `ISSUEOPS_DB_PATH` 覆盖。Persistent Memory 关闭时，Agent 推理与最终结果语义保持
 不变。
 
+Stage 08 评测代码仅位于 `eval/`，通过现有 `run_agent` 注入点运行生产
+Agent，并在运行结束后读取最终 `AgentState`。数据集严格包含：
+
+```text
+repository = 8
+github = 4
+reliability = 4
+reflection = 4
+```
+
+GitHub 用例使用 `httpx.MockTransport`，不访问公网。当前代表性报告为
+20 个用例通过 19 个；`repo-007` 保留了 `EXECUTION_FAILED` 与预期
+`INVALID_ARGUMENT` 的真实分类差异，未因评测结果修改 Production Agent。
+
 ## 下一阶段
 
-- Stage 08：Evaluation（尚未开始）。
+- Stage 09：等待后续规格。
 
-当前没有实现 Evaluation、FastAPI、Async API、Docker、GitHub 写操作或
+当前没有实现 FastAPI、Async API、Docker、GitHub 写操作或
 Multi-Agent。Reviewer 与 Reflection 均不直接执行 Tool；Stage 05 Retry 语义未被
 Stage 06 Reflection 或 Stage 07 Persistence 改变。

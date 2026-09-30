@@ -1,0 +1,1333 @@
+{
+  "timestamp": "2026-09-30T13:51:43+00:00",
+  "dataset_version": "0.1.0",
+  "python_version": "3.12.14",
+  "metrics": {
+    "total_cases": 20,
+    "passed_cases": 19,
+    "case_pass_rate": 0.95,
+    "task_success_eligible_cases": 11,
+    "successful_tasks": 11,
+    "task_success_rate": 1.0,
+    "tool_selection_accuracy": 1.0,
+    "tool_argument_accuracy": 1.0,
+    "avg_tool_calls": 1.25,
+    "avg_execution_attempts": 1.5,
+    "avg_latency_ms": 8.896,
+    "p50_latency_ms": 8.791,
+    "p95_latency_ms": 10.585,
+    "retry_case_count": 3,
+    "retry_rate": 0.15,
+    "total_retries": 4,
+    "avg_retries_per_case": 0.2,
+    "reflection_case_count": 10,
+    "reflection_rate": 0.5,
+    "avg_reflection_count": 0.8,
+    "recovery_eligible_cases": 1,
+    "recovered_cases": 1,
+    "recovery_rate": 1.0,
+    "timeout_count": 4,
+    "fallback_count": 1,
+    "max_retries_exceeded_count": 2,
+    "max_tool_calls_exceeded_count": 2
+  },
+  "category_results": {
+    "repository": {
+      "total_cases": 8,
+      "passed_cases": 7,
+      "pass_rate": 0.875
+    },
+    "github": {
+      "total_cases": 4,
+      "passed_cases": 4,
+      "pass_rate": 1.0
+    },
+    "reliability": {
+      "total_cases": 4,
+      "passed_cases": 4,
+      "pass_rate": 1.0
+    },
+    "reflection": {
+      "total_cases": 4,
+      "passed_cases": 4,
+      "pass_rate": 1.0
+    }
+  },
+  "case_results": [
+    {
+      "case_id": "repo-001",
+      "category": "repository",
+      "description": "分析固定仓库的目录和 Python 模块。",
+      "user_query": "分析项目结构",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "list_directory",
+        "search_code"
+      ],
+      "actual_tools": [
+        "list_directory",
+        "search_code"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "list_directory",
+          "mode": "subset",
+          "expected": {
+            "path": "."
+          },
+          "actual": {
+            "path": "."
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        },
+        {
+          "call_index": 1,
+          "tool_name": "search_code",
+          "mode": "subset",
+          "expected": {
+            "query": "class ",
+            "path": "agent",
+            "file_pattern": "*.py"
+          },
+          "actual": {
+            "query": "class ",
+            "path": "agent",
+            "file_pattern": "*.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "list_directory",
+        "search_code"
+      ],
+      "actual_evidence_sources": [
+        "list_directory",
+        "search_code"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 2,
+      "execution_attempts": 2,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 11.714800028130412,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "repo-002",
+      "category": "repository",
+      "description": "定位并读取 AgentState 定义。",
+      "user_query": "查找 AgentState 的定义",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "search_code",
+        "read_file"
+      ],
+      "actual_tools": [
+        "search_code",
+        "read_file"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "search_code",
+          "mode": "subset",
+          "expected": {
+            "query": "AgentState",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "actual": {
+            "query": "AgentState",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        },
+        {
+          "call_index": 1,
+          "tool_name": "read_file",
+          "mode": "subset",
+          "expected": {
+            "path": "agent/state.py"
+          },
+          "actual": {
+            "path": "agent/state.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "search_code",
+        "read_file"
+      ],
+      "actual_evidence_sources": [
+        "read_file",
+        "search_code"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 2,
+      "execution_attempts": 2,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 10.230799904093146,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "repo-003",
+      "category": "repository",
+      "description": "使用生产 Planner 定位 login 相关代码。",
+      "user_query": "定位登录问题",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "search_code"
+      ],
+      "actual_tools": [
+        "search_code"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "search_code",
+          "mode": "subset",
+          "expected": {
+            "query": "login",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "actual": {
+            "query": "login",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "search_code"
+      ],
+      "actual_evidence_sources": [
+        "search_code"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 8.767099818214774,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "repo-004",
+      "category": "repository",
+      "description": "概述固定仓库代码模块。",
+      "user_query": "概述仓库代码模块",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "list_directory",
+        "search_code"
+      ],
+      "actual_tools": [
+        "list_directory",
+        "search_code"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "list_directory",
+          "mode": "subset",
+          "expected": {
+            "path": "."
+          },
+          "actual": {
+            "path": "."
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        },
+        {
+          "call_index": 1,
+          "tool_name": "search_code",
+          "mode": "subset",
+          "expected": {
+            "query": "class ",
+            "path": "agent",
+            "file_pattern": "*.py"
+          },
+          "actual": {
+            "query": "class ",
+            "path": "agent",
+            "file_pattern": "*.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "list_directory",
+        "search_code"
+      ],
+      "actual_evidence_sources": [
+        "list_directory",
+        "search_code"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 2,
+      "execution_attempts": 2,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 9.065199876204133,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "repo-005",
+      "category": "repository",
+      "description": "读取不存在文件并验证结构化失败。",
+      "user_query": "读取不存在文件",
+      "passed": true,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "read_file"
+      ],
+      "actual_tools": [
+        "read_file"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "read_file",
+          "mode": "subset",
+          "expected": {
+            "path": "missing.txt"
+          },
+          "actual": {
+            "path": "missing.txt"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [],
+      "actual_evidence_sources": [],
+      "expected_error_codes": [
+        "FILE_NOT_FOUND"
+      ],
+      "actual_error_codes": [
+        "FILE_NOT_FOUND"
+      ],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 2,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 9.148600045591593,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "repo-006",
+      "category": "repository",
+      "description": "搜索不存在符号并保留空结果 Evidence。",
+      "user_query": "定位 MissingWidget 符号",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "search_code"
+      ],
+      "actual_tools": [
+        "search_code"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "search_code",
+          "mode": "subset",
+          "expected": {
+            "query": "MissingWidget",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "actual": {
+            "query": "MissingWidget",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "search_code"
+      ],
+      "actual_evidence_sources": [
+        "search_code"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 8.114200085401535,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "repo-007",
+      "category": "repository",
+      "description": "拒绝越过 workspace 的路径。",
+      "user_query": "验证路径边界",
+      "passed": false,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "read_file"
+      ],
+      "actual_tools": [
+        "read_file"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "read_file",
+          "mode": "exact",
+          "expected": {
+            "path": "../secret.txt"
+          },
+          "actual": {
+            "path": "../secret.txt"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [],
+      "actual_evidence_sources": [],
+      "expected_error_codes": [
+        "INVALID_ARGUMENT"
+      ],
+      "actual_error_codes": [
+        "EXECUTION_FAILED"
+      ],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 2,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 9.468599921092391,
+      "final_answer_non_empty": true,
+      "failure_categories": [
+        "TOOL_EXECUTION_ERROR"
+      ],
+      "failure_reasons": [
+        "Error code 期望 ['INVALID_ARGUMENT']，实际 ['EXECUTION_FAILED']。"
+      ],
+      "exception_summary": null
+    },
+    {
+      "case_id": "repo-008",
+      "category": "repository",
+      "description": "读取固定 README 文件。",
+      "user_query": "读取 README.md",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "read_file"
+      ],
+      "actual_tools": [
+        "read_file"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "read_file",
+          "mode": "exact",
+          "expected": {
+            "path": "README.md"
+          },
+          "actual": {
+            "path": "README.md"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "read_file"
+      ],
+      "actual_evidence_sources": [
+        "read_file"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 7.103600073605776,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "github-001",
+      "category": "github",
+      "description": "通过 MockTransport 查询 GitHub Issue。",
+      "user_query": "分析 octocat/Hello-World Issue #7",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "get_github_issue"
+      ],
+      "actual_tools": [
+        "get_github_issue"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "get_github_issue",
+          "mode": "exact",
+          "expected": {
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "issue_number": 7
+          },
+          "actual": {
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "issue_number": 7
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "get_github_issue"
+      ],
+      "actual_evidence_sources": [
+        "get_github_issue"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 7.8946000430732965,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "github-002",
+      "category": "github",
+      "description": "通过 MockTransport 查询 GitHub Pull Request。",
+      "user_query": "分析 octocat/Hello-World PR #8",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "get_github_pr"
+      ],
+      "actual_tools": [
+        "get_github_pr"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "get_github_pr",
+          "mode": "exact",
+          "expected": {
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "pull_number": 8
+          },
+          "actual": {
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "pull_number": 8
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "get_github_pr"
+      ],
+      "actual_evidence_sources": [
+        "get_github_pr"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 7.61369988322258,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "github-003",
+      "category": "github",
+      "description": "GitHub Issue 404 的确定性错误路径。",
+      "user_query": "分析 octocat/Hello-World Issue #404",
+      "passed": true,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "get_github_issue"
+      ],
+      "actual_tools": [
+        "get_github_issue"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "get_github_issue",
+          "mode": "exact",
+          "expected": {
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "issue_number": 404
+          },
+          "actual": {
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "issue_number": 404
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [],
+      "actual_evidence_sources": [],
+      "expected_error_codes": [
+        "GITHUB_NOT_FOUND"
+      ],
+      "actual_error_codes": [
+        "GITHUB_NOT_FOUND"
+      ],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 2,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 9.868300054222345,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "github-004",
+      "category": "github",
+      "description": "GitHub Rate Limit 后有限 Retry 并耗尽。",
+      "user_query": "分析 octocat/Hello-World Issue #9",
+      "passed": true,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "get_github_issue"
+      ],
+      "actual_tools": [
+        "get_github_issue"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "get_github_issue",
+          "mode": "exact",
+          "expected": {
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "issue_number": 9
+          },
+          "actual": {
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "issue_number": 9
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [],
+      "actual_evidence_sources": [],
+      "expected_error_codes": [
+        "MAX_RETRIES_EXCEEDED"
+      ],
+      "actual_error_codes": [
+        "MAX_RETRIES_EXCEEDED"
+      ],
+      "tool_calls": 1,
+      "execution_attempts": 2,
+      "retries": 1,
+      "reflections": 2,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 1,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 10.585000040009618,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "reliability-001",
+      "category": "reliability",
+      "description": "第一次 Timeout 后 Retry 成功。",
+      "user_query": "测试 Retry 成功",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "flaky_evaluation_tool"
+      ],
+      "actual_tools": [
+        "flaky_evaluation_tool"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "flaky_evaluation_tool",
+          "mode": "exact",
+          "expected": {},
+          "actual": {},
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "flaky_evaluation_tool"
+      ],
+      "actual_evidence_sources": [
+        "flaky_evaluation_tool"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 2,
+      "retries": 1,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 1,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 7.211799966171384,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "reliability-002",
+      "category": "reliability",
+      "description": "永久 Timeout 导致 Retry Exhaustion。",
+      "user_query": "测试 Retry 耗尽",
+      "passed": true,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "always_timeout_evaluation_tool"
+      ],
+      "actual_tools": [
+        "always_timeout_evaluation_tool"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "always_timeout_evaluation_tool",
+          "mode": "exact",
+          "expected": {},
+          "actual": {},
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [],
+      "actual_evidence_sources": [],
+      "expected_error_codes": [
+        "MAX_RETRIES_EXCEEDED"
+      ],
+      "actual_error_codes": [
+        "MAX_RETRIES_EXCEEDED"
+      ],
+      "tool_calls": 1,
+      "execution_attempts": 3,
+      "retries": 2,
+      "reflections": 2,
+      "fallback_count": 0,
+      "timeout_count": 3,
+      "max_retries_exceeded_count": 1,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 9.714999934658408,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "reliability-003",
+      "category": "reliability",
+      "description": "主 Tool 失败后执行确定性 Fallback。",
+      "user_query": "测试 Fallback",
+      "passed": true,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "primary_failure_evaluation_tool"
+      ],
+      "actual_tools": [
+        "primary_failure_evaluation_tool"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "primary_failure_evaluation_tool",
+          "mode": "exact",
+          "expected": {},
+          "actual": {},
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "fallback_evaluation_tool"
+      ],
+      "actual_evidence_sources": [
+        "fallback_evaluation_tool"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 2,
+      "retries": 0,
+      "reflections": 2,
+      "fallback_count": 1,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 9.114200016483665,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "reliability-004",
+      "category": "reliability",
+      "description": "三步骤计划受 MAX_TOOL_CALLS=2 保护。",
+      "user_query": "测试 Tool 调用预算",
+      "passed": true,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "stable_evaluation_tool",
+        "stable_evaluation_tool"
+      ],
+      "actual_tools": [
+        "stable_evaluation_tool",
+        "stable_evaluation_tool"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "stable_evaluation_tool",
+          "mode": "exact",
+          "expected": {},
+          "actual": {},
+          "passed": true,
+          "reason": "参数匹配。"
+        },
+        {
+          "call_index": 1,
+          "tool_name": "stable_evaluation_tool",
+          "mode": "exact",
+          "expected": {},
+          "actual": {},
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "stable_evaluation_tool"
+      ],
+      "actual_evidence_sources": [
+        "stable_evaluation_tool"
+      ],
+      "expected_error_codes": [
+        "MAX_TOOL_CALLS_EXCEEDED"
+      ],
+      "actual_error_codes": [
+        "MAX_TOOL_CALLS_EXCEEDED"
+      ],
+      "tool_calls": 2,
+      "execution_attempts": 2,
+      "retries": 0,
+      "reflections": 1,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 1,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 8.790699997916818,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "reflection-001",
+      "category": "reflection",
+      "description": "Evidence 完整时首轮 Review 通过。",
+      "user_query": "读取 README.md 并形成回答",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "read_file"
+      ],
+      "actual_tools": [
+        "read_file"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "read_file",
+          "mode": "exact",
+          "expected": {
+            "path": "README.md"
+          },
+          "actual": {
+            "path": "README.md"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "read_file"
+      ],
+      "actual_evidence_sources": [
+        "read_file"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 0,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": true,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 7.084300043061376,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "reflection-002",
+      "category": "reflection",
+      "description": "缺少 read_file Evidence 后 Reflection Recovery。",
+      "user_query": "定位 AgentState 定义并读取对应实现",
+      "passed": true,
+      "expected_status": "completed",
+      "task_status": "completed",
+      "expected_review_passed": true,
+      "review_passed": true,
+      "expected_tools": [
+        "search_code",
+        "read_file"
+      ],
+      "actual_tools": [
+        "search_code",
+        "read_file"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "search_code",
+          "mode": "subset",
+          "expected": {
+            "query": "AgentState",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "actual": {
+            "query": "AgentState",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        },
+        {
+          "call_index": 1,
+          "tool_name": "read_file",
+          "mode": "subset",
+          "expected": {
+            "path": "agent/state.py"
+          },
+          "actual": {
+            "path": "agent/state.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "search_code",
+        "read_file"
+      ],
+      "actual_evidence_sources": [
+        "read_file",
+        "search_code"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 2,
+      "execution_attempts": 2,
+      "retries": 0,
+      "reflections": 1,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": false,
+      "recovery_eligible": true,
+      "recovered": true,
+      "latency_ms": 9.756800020113587,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "reflection-003",
+      "category": "reflection",
+      "description": "Reviewer 持续失败并达到 Reflection 上限。",
+      "user_query": "测试 Reflection 上限",
+      "passed": true,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "stable_evaluation_tool"
+      ],
+      "actual_tools": [
+        "stable_evaluation_tool"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "stable_evaluation_tool",
+          "mode": "exact",
+          "expected": {},
+          "actual": {},
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "stable_evaluation_tool"
+      ],
+      "actual_evidence_sources": [
+        "stable_evaluation_tool"
+      ],
+      "expected_error_codes": [],
+      "actual_error_codes": [],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 1,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 0,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 8.180999895557761,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    },
+    {
+      "case_id": "reflection-004",
+      "category": "reflection",
+      "description": "Reflection 生成补证步骤但 Tool Budget 阻止执行。",
+      "user_query": "定位 AgentState 定义并读取对应实现",
+      "passed": true,
+      "expected_status": "partial",
+      "task_status": "partial",
+      "expected_review_passed": false,
+      "review_passed": false,
+      "expected_tools": [
+        "search_code"
+      ],
+      "actual_tools": [
+        "search_code"
+      ],
+      "tool_selection_correct": true,
+      "tool_argument_checks": [
+        {
+          "call_index": 0,
+          "tool_name": "search_code",
+          "mode": "subset",
+          "expected": {
+            "query": "AgentState",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "actual": {
+            "query": "AgentState",
+            "path": ".",
+            "file_pattern": "*.py"
+          },
+          "passed": true,
+          "reason": "参数匹配。"
+        }
+      ],
+      "tool_argument_accuracy": 1.0,
+      "required_evidence_sources": [
+        "search_code"
+      ],
+      "actual_evidence_sources": [
+        "search_code"
+      ],
+      "expected_error_codes": [
+        "MAX_TOOL_CALLS_EXCEEDED"
+      ],
+      "actual_error_codes": [
+        "MAX_TOOL_CALLS_EXCEEDED"
+      ],
+      "tool_calls": 1,
+      "execution_attempts": 1,
+      "retries": 0,
+      "reflections": 1,
+      "fallback_count": 0,
+      "timeout_count": 0,
+      "max_retries_exceeded_count": 0,
+      "max_tool_calls_exceeded_count": 1,
+      "first_review_passed": false,
+      "recovery_eligible": false,
+      "recovered": false,
+      "latency_ms": 8.495900081470609,
+      "final_answer_non_empty": true,
+      "failure_categories": [],
+      "failure_reasons": [],
+      "exception_summary": null
+    }
+  ]
+}

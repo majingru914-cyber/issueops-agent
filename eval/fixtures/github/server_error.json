@@ -1,0 +1,5 @@
+{
+  "status_code": 500,
+  "headers": {},
+  "json": {"message": "Internal Server Error"}
+}
