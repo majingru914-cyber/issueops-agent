@@ -43,6 +43,13 @@ def test_cli_outputs_plan_and_execute_result() -> None:
     assert output["retry_count"] == 0
     assert output["evidence"]
     assert output["errors"] == []
+    assert output["draft_answer"]
+    assert output["review_passed"] is True
+    assert output["review_score"] == 1.0
+    assert output["review"]
+    assert output["reflection_count"] == 0
+    assert output["reflection"] is None
+    assert output["replan_count"] == 0
     assert output["final_answer"]
     assert "event=tool_execute" in result.stderr
     assert "task_id=" in result.stderr
@@ -62,6 +69,9 @@ def test_cli_executes_agent_state_multi_step() -> None:
     assert len(output["evidence"]) == 2
     assert output["tool_call_count"] == 2
     assert len(output["execution_attempts"]) == 2
+    assert output["review_passed"] is True
+    assert output["reflection_count"] == 0
+    assert output["draft_answer"] == output["final_answer"]
     assert "AgentState" in output["final_answer"]
 
 

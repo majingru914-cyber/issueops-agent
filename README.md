@@ -6,10 +6,10 @@ IssueOps Agent 是一个基于 Python 和 LangGraph 的软件研发任务自主�
 Agent。项目最终将支持任务分析、仓库检查、工具执行、证据收集、审查、
 反思和重新规划。
 
-当前仓库已经实现一个带可靠性边界的 Plan-and-Execute LangGraph。Planner 生成
-结构化 Tool 调用，Executor 通过统一 ToolRuntime 执行本地 Repository Tool 和
-只读 GitHub Tool；Runtime 负责错误分类、有限重试、通用超时、确定性 Fallback
-和执行预算，最终 ToolResult 转换为 Evidence 或 Error 后生成回答。
+当前仓库已经实现完整的单 Agent 核心闭环。Planner 生成结构化 Tool 调用，
+Executor 通过统一 ToolRuntime 执行本地 Repository Tool 和只读 GitHub Tool；
+Evidence 形成 Draft Answer 后，由确定性 Reviewer 判断完成度。Review Fail 会
+进入 Reflection，并由 Re-plan 只追加缺失步骤后重新执行。
 
 ## 项目目标
 
@@ -45,12 +45,19 @@ User
 → More Steps?
 ├─ Yes → Execute Tool
 ├─ Budget Exhausted → Record Error
-└─ No → Generate Answer
-          → Final
+└─ No → Generate Draft Answer
+          → Reviewer
+          → Passed?
+             ├─ Yes → Final Answer
+             └─ No → Reflection
+                       → Re-plan
+                       → Execute Tool
 ```
 
-Graph 使用条件边逐步执行有限计划，同时受 `MAX_TOOL_CALLS` 保护。最终成功的
-ToolResult 进入 Evidence，终态失败进入 Errors；最终回答只依据这些结果生成。
+Graph 使用条件边逐步执行有限计划，并分别受到 `MAX_RETRIES`、
+`MAX_TOOL_CALLS` 和 `MAX_REFLECTIONS` 保护。最终成功的 ToolResult 进入
+Evidence，终态失败进入 Errors；只有 Review Pass 或 Reflection 达到上限时才会
+形成 Final Answer。
 
 当前 Tool System 链路为：
 
@@ -82,7 +89,7 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 
 ## 当前状态
 
-**Current Status: Stage 05 — Reliability**
+**Current Status: Stage 06 — Reviewer / Reflection / Re-plan**
 
 当前已实现：
 
@@ -110,6 +117,13 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 - 区分 logical Tool call 与实际 execution attempt 的完整 trace；
 - `MAX_TOOL_CALLS` Graph 终止保护；
 - 不记录 Tool arguments 或环境变量的结构化 `key=value` 日志。
+- 明确区分 `draft_answer` 与 `final_answer`；
+- 结构化 `ReviewResult`，检查 Goal、Evidence、关键错误、Plan 与 Draft grounding；
+- `REVIEW_PASS_THRESHOLD = 0.8` 的唯一确定性 Review 阈值；
+- 结构化 `ReflectionResult` 与可观察的 Review / Reflection history；
+- 复用 `PlanStep` 的增量 Re-plan，并保留全部旧 Evidence、Error 与 trace；
+- `MAX_REFLECTIONS = 2` 默认推理循环上限；
+- Review Pass、Reflection Recovery、Reflection Exhaustion 和 Tool Budget 交互路径。
 
 Planner 是 Tool 选择和参数的权威来源；Executor 不从自然语言重新猜测 Tool，
 也不实现 Retry loop。Retry 与 Fallback 只存在于唯一的 `ToolRuntime.execute()`
@@ -128,6 +142,17 @@ max_tool_calls = 20
 `RATE_LIMIT` 与临时 `GITHUB_API_ERROR` 可重试。Retry 耗尽后返回
 `MAX_RETRIES_EXCEEDED`，并通过 `last_error_code` 保留最后原始错误。
 
+三个硬限制职责不同：
+
+```text
+MAX_RETRIES     = 同一 Tool Step 的临时失败重试上限
+MAX_TOOL_CALLS  = 单次 Agent 运行的实际 Tool attempt 总预算
+MAX_REFLECTIONS = Review Fail 后的 Reflection / Re-plan 上限
+```
+
+Reviewer 和 Reflection 不调用 ToolRuntime；Re-plan 也不执行 Tool，只生成现有
+`PlanStep` Contract。所有新增步骤仍由 Executor 和唯一 ToolRuntime 执行。
+
 GitHub Tool 仅执行读取操作，不会修改 Issue、发表评论、创建 PR 或写入仓库。
 
 ## 项目结构
@@ -142,6 +167,9 @@ issueops-agent/
 │   ├── graph.py        # LangGraph 构建与编译
 │   ├── parsing.py      # GitHub 引用结构提取
 │   ├── planner.py      # 任务规划节点
+│   ├── reflection.py   # Reflection 与次数上限
+│   ├── replanner.py    # 增量 Re-plan
+│   ├── reviewer.py     # 确定性 Reviewer
 │   ├── schemas.py      # Pydantic 结构化模型
 │   └── state.py        # LangGraph 运行时状态
 ├── api/                # 后续阶段使用
@@ -220,6 +248,13 @@ CLI 会输出包含以下字段的 JSON：
 - `execution_attempts`
 - `evidence`
 - `errors`
+- `draft_answer`
+- `review_score`
+- `review_passed`
+- `review`
+- `reflection_count`
+- `reflection`
+- `replan_count`
 - `final_answer`
 
 执行本地多步骤场景：
@@ -295,9 +330,10 @@ python -m pytest -v
 - Stage 03：只读 GitHub Issue / PR Tool；
 - Stage 04：Plan-and-Execute、Evidence 和确定性最终回答；
 - Stage 05：统一错误分类、Retry、Timeout、Fallback、执行预算和结构化日志；
-- Stage 06 及后续阶段：逐步加入 Reviewer、Reflection 和 Re-plan。
+- Stage 06：Reviewer、Reflection、增量 Re-plan 与完整核心 Agent 闭环；
+- Stage 07 及后续阶段：逐步加入持久化 Memory 和 Evaluation。
 
-当前尚未实现 Reviewer、Reflection、Re-plan、Memory、Evaluation、FastAPI、
+当前尚未实现 Persistent Memory、Evaluation Benchmark、FastAPI、Async API、
 Docker 或 Multi-Agent。README 中的后续能力仅表示规划，不代表已经实现。
 
 ## 已知可靠性边界
@@ -309,3 +345,8 @@ Docker 或 Multi-Agent。README 中的后续能力仅表示规划，不代表已
 - attempt trace 保存在 AgentState，长计划会增长状态体积，但当前最多保留
   `MAX_TOOL_CALLS` 条；
 - Fallback 共用原 Tool arguments，仅适用于输入契约兼容的显式 Tool 映射。
+- 当前 Reviewer 为规则实现，对复杂自然语言目标可能出现 false positive 或
+  false negative；
+- Re-plan 只支持现有已知 Evidence 缺口，无法为未知业务目标临时发明新 Tool；
+- Review、Reflection、Plan 与 Evidence history 均保存在 AgentState，虽受硬上限
+  保护，仍会随循环增加状态体积。

@@ -10,7 +10,15 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from agent.graph import build_agent_graph
-from agent.schemas import Evidence, ExecutionError, TaskAnalysis, TaskPlan, ToolResultRecord
+from agent.schemas import (
+    Evidence,
+    ExecutionError,
+    ReflectionResult,
+    ReviewResult,
+    TaskAnalysis,
+    TaskPlan,
+    ToolResultRecord,
+)
 from tools.runtime import build_tool_runtime
 
 
@@ -58,6 +66,16 @@ def format_result(final_state: dict[str, object]) -> str:
         ToolResultRecord.model_validate(item)
         for item in final_state.get("tool_results", [])
     ]
+    review = (
+        ReviewResult.model_validate(final_state.get("review"))
+        if final_state.get("review")
+        else None
+    )
+    reflection = (
+        ReflectionResult.model_validate(final_state.get("reflection"))
+        if final_state.get("reflection")
+        else None
+    )
     result = {
         **analysis.model_dump(),
         "task_id": final_state.get("task_id", ""),
@@ -82,6 +100,13 @@ def format_result(final_state: dict[str, object]) -> str:
         "execution_attempts": final_state.get("execution_attempts", []),
         "evidence": [item.model_dump(exclude={"raw_result"}) for item in evidence],
         "errors": [item.model_dump() for item in errors],
+        "draft_answer": final_state.get("draft_answer", ""),
+        "review_score": final_state.get("review_score", 0.0),
+        "review_passed": final_state.get("review_passed", False),
+        "review": review.model_dump() if review else None,
+        "reflection_count": final_state.get("reflection_count", 0),
+        "reflection": reflection.model_dump() if reflection else None,
+        "replan_count": final_state.get("replan_count", 0),
         "final_answer": final_state.get("final_answer", ""),
     }
     return json.dumps(result, ensure_ascii=False, indent=2)

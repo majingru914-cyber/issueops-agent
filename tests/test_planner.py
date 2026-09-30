@@ -52,3 +52,8 @@ def test_planner_initializes_execution_state() -> None:
     assert result["tool_results"] == []
     assert result["evidence"] == []
     assert result["errors"] == []
+    assert result["review_history"] == []
+    assert result["reflection_count"] == 0
+    assert result["reflection_history"] == []
+    assert result["replan_count"] == 0
+    assert result["replan_records"] == []

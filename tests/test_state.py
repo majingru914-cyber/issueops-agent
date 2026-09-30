@@ -3,12 +3,20 @@
 import pytest
 from pydantic import ValidationError
 
-from agent.schemas import Evidence, PlanStep, TaskAnalysis, TaskPlan, ToolCallRecord
+from agent.schemas import (
+    Evidence,
+    PlanStep,
+    ReflectionResult,
+    ReviewResult,
+    TaskAnalysis,
+    TaskPlan,
+    ToolCallRecord,
+)
 from agent.state import AgentState
 
 
-def test_agent_state_exposes_stage_05_fields() -> None:
-    """AgentState 应包含执行、可靠性、证据和最终回答字段。"""
+def test_agent_state_exposes_stage_06_fields() -> None:
+    """AgentState 应包含执行、Review、Reflection 和 Re-plan 字段。"""
 
     assert AgentState.__required_keys__ == frozenset({"user_query"})
     assert AgentState.__optional_keys__ == frozenset(
@@ -26,6 +34,16 @@ def test_agent_state_exposes_stage_05_fields() -> None:
             "retry_count",
             "evidence",
             "errors",
+            "draft_answer",
+            "review",
+            "review_score",
+            "review_passed",
+            "review_history",
+            "reflection",
+            "reflection_count",
+            "reflection_history",
+            "replan_count",
+            "replan_records",
             "final_answer",
         }
     )
@@ -57,11 +75,30 @@ def test_structured_models_accept_valid_data() -> None:
         summary="发现项目目录。",
         raw_result={"entries": []},
     )
+    review = ReviewResult(
+        round=1,
+        passed=True,
+        score=1.0,
+        criterion_scores={"goal_completion": 1.0},
+        issues=[],
+        missing_evidence=[],
+        reason="Evidence 充分。",
+    )
+    reflection = ReflectionResult(
+        round=1,
+        failure_reason="缺少 Evidence。",
+        missing_information=[],
+        missing_evidence=["read_file"],
+        plan_problems=[],
+        proposed_actions=["read_file"],
+    )
 
     assert analysis.task_type == "repository_analysis"
     assert plan.steps == [step]
     assert tool_call.arguments == {"path": "."}
     assert evidence.source_type == "tool"
+    assert review.passed is True
+    assert reflection.proposed_actions == ["read_file"]
 
 
 @pytest.mark.parametrize(

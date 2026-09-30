@@ -103,3 +103,43 @@ class ExecutionError(BaseModel):
     last_error_code: str | None = None
     attempt_count: int = Field(default=0, ge=0)
     retry_count: int = Field(default=0, ge=0)
+
+
+class ReviewResult(BaseModel):
+    """Reviewer 对当前 Draft 与执行状态的结构化判断。"""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    round: int = Field(gt=0)
+    passed: bool
+    score: float = Field(ge=0.0, le=1.0)
+    criterion_scores: dict[str, float]
+    issues: list[str]
+    missing_evidence: list[str]
+    reason: str = Field(min_length=1)
+    recommended_action: str | None = None
+
+
+class ReflectionResult(BaseModel):
+    """Reviewer Fail 后的结构化原因与补充动作。"""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    round: int = Field(gt=0)
+    failure_reason: str = Field(min_length=1)
+    missing_information: list[str]
+    missing_evidence: list[str]
+    plan_problems: list[str]
+    proposed_actions: list[str]
+
+
+class ReplanRecord(BaseModel):
+    """一次增量 Re-plan 的运行期 trace。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    round: int = Field(gt=0)
+    reason: str = Field(min_length=1)
+    previous_plan: list[PlanStep]
+    added_steps: list[PlanStep]
+    resulting_plan: list[PlanStep]

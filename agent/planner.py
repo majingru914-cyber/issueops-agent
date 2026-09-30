@@ -106,4 +106,9 @@ def create_plan(state: AgentState) -> dict[str, object]:
         "tool_results": [],
         "evidence": [],
         "errors": [],
+        "review_history": [],
+        "reflection_count": 0,
+        "reflection_history": [],
+        "replan_count": 0,
+        "replan_records": [],
     }

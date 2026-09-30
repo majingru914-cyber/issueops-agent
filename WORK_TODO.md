@@ -14,6 +14,8 @@
   Evidence、Error、条件步骤循环和基于证据的最终回答。
 - Stage 05：完成统一错误分类、`retryable` Contract、有限 Retry、通用 Tool
   timeout、确定性一级 Fallback、attempt trace、`MAX_TOOL_CALLS` 和结构化日志。
+- Stage 06：完成结构化 Reviewer、Draft/Final 分离、Reflection、增量 Re-plan、
+  `MAX_REFLECTIONS`、Review history 和完整核心 Agent 闭环。
 
 ## 当前边界
 
@@ -29,8 +31,15 @@ START
 → more_steps?
 ├─ Yes → execute_step
 ├─ Budget Exhausted → tool_budget_exceeded
-└─ No → generate_answer
-          → END
+└─ No → generate_draft_answer
+          → review_answer
+          → review_passed?
+             ├─ Yes → finalize_answer → END
+             └─ No → reflect
+                       → replan
+                       ├─ New Step → execute_step
+                       ├─ Tool Budget Exhausted → finalize_answer → END
+                       └─ No New Step → generate_draft_answer
 ```
 
 Planner 通过 `tool_name` 和 `tool_args` 决定 logical Tool call，Executor 只负责
@@ -53,7 +62,12 @@ Tool Request
 
 最终成功 ToolResult 进入 Evidence，终态失败 ToolResult 进入 Errors。所有实际
 Attempt 进入 `execution_attempts`，并计入 `tool_call_count`；达到
-`MAX_TOOL_CALLS` 时 Graph 记录错误并直接生成最终回答。
+`MAX_TOOL_CALLS` 时 Graph 记录错误，禁止任何新增 Tool execution，并通过 Review
+或明确降级路径安全形成 Final Answer。
+
+Reviewer 检查 Goal Completion、Evidence Completeness、关键 Error、Plan Completion
+和 Answer Grounding。Review Fail 后，Reflection 只分析缺口，Re-plan 只追加缺失
+`PlanStep`；旧 Evidence、ToolResult、ToolCall、Error 和 attempt trace 均保留。
 
 当前默认 Registry 包含：
 
@@ -73,12 +87,16 @@ GitHub Tool 当前只读，自动化测试全部使用 Mock HTTP。
 max_retries = 2
 timeout_seconds = 10
 max_tool_calls = 20
+max_reflections = 2
 ```
+
+`retry_count` 统计同一 Tool Step 的 Runtime Retry；`reflection_count` 统计
+Review Fail 后的推理与增量 Re-plan，两者完全分离。
 
 ## 待开始
 
-- Stage 06：Reviewer / Reflection / Re-plan。
+- Stage 07：Persistent Memory。
 
-当前没有实现 Reviewer、Reflection、Re-plan、持久化、Evaluation、FastAPI、
-Docker、GitHub 写操作或 Multi-Agent。Stage 05 的 Retry 仅针对同一 Tool Step，
-不改变 Planner 计划。
+当前没有实现持久化、Evaluation、FastAPI、Async API、Docker、GitHub 写操作或
+Multi-Agent。Reviewer 与 Reflection 均不直接执行 Tool；Stage 05 Retry 语义未被
+Stage 06 Reflection 改变。
