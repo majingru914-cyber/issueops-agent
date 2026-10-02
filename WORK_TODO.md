@@ -25,6 +25,11 @@
 - Stage 09：完成 FastAPI application factory、HTTP Schema、`AgentService`、
   `POST /tasks`、`GET /tasks/{task_id}`、`GET /status`、`GET /trace`、
   同步 Runner 的线程卸载、SQLite 查询、并发隔离、后台异常边界和 API 测试。
+- Stage 09 Git 边界：`main` 已通过 `ff-only` 合并到 `d96bd44`，合并后
+  146 项测试通过，Evaluation correctness baseline 保持 19/20。
+- Stage 10：实现 `Dockerfile`、`.dockerignore`、non-root 单进程 Uvicorn、
+  `/health`、`/app/data` SQLite Volume、runtime environment 注入和 Docker
+  packaging contract 测试；Docker Engine E2E 验证以实际执行结果为准。
 
 ## 当前边界
 
@@ -153,11 +158,28 @@ FastAPI
 SQLite connection，满足单进程并发边界。运行中进程退出后的任务恢复、跨进程
 协调、Authentication、分页和分布式 Worker 不属于 Stage 09。
 
+Stage 10 只封装现有 `api.main:app`：
+
+```text
+Host :8000
+→ Docker Container
+→ Uvicorn 0.0.0.0:8000（single process）
+→ FastAPI / AgentService
+→ IssueOps Agent
+→ /app/data/issueops.db
+→ Docker named volume
+```
+
+Container 使用 non-root `issueops` 用户。`.env`、开发 SQLite、Git metadata、venv
+和 cache 均不进入 Build Context；`GITHUB_TOKEN` 只允许通过 `docker run -e` 或
+`--env-file` 在 runtime 注入。`/health` 只表达 deployment health，`/status` 继续
+表达 application task statistics。
+
 ## 下一阶段
 
-- Stage 10：尚未开始；按后续规格处理 Docker 与独立 health 能力。
+- Stage 11：尚未开始，等待后续规格。
 
-当前没有实现 Docker、Docker Compose、Kubernetes、Redis、Celery、分布式
-Worker、Frontend、Authentication、GitHub 写操作或 Multi-Agent。Reviewer 与
+当前没有实现 Docker Compose、Kubernetes、Redis、Celery、分布式 Worker、
+Nginx、Cloud Deployment、Frontend、Authentication、GitHub 写操作或 Multi-Agent。Reviewer 与
 Reflection 均不直接执行 Tool；Stage 05 Retry 语义未被 Stage 06 Reflection、
-Stage 07 Persistence 或 Stage 09 HTTP Service 改变。
+Stage 07 Persistence、Stage 09 HTTP Service 或 Stage 10 Docker Packaging 改变。

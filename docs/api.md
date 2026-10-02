@@ -58,6 +58,20 @@ application 重启后仍可查询。
 
 ## Endpoint
 
+### `GET /health`
+
+返回 HTTP `200`：
+
+```json
+{
+  "status": "healthy",
+  "service": "issueops-agent"
+}
+```
+
+该接口只用于 deployment health，不运行 Agent、不请求 GitHub，也不执行复杂数据库
+统计。`GET /status` 继续负责 application task statistics。
+
 ### `POST /tasks`
 
 Request：
@@ -144,7 +158,7 @@ Client 不能提交 `plan`、`tool_calls`、Review 或 Reflection 等内部状�
 ```
 
 `active_tasks` 来自当前进程的 background task registry；其余计数来自 SQLite。
-该接口表达 Stage 09 Agent Service 状态，不是 Stage 10 容器 health endpoint。
+该接口表达 Agent Service 状态，不替代 Stage 10 的 `/health` deployment endpoint。
 
 ## Async 模型
 

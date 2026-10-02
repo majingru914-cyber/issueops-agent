@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from agent.runner import run_agent
 from api.schemas import (
     ErrorResponse,
+    HealthResponse,
     ServiceStatusResponse,
     TaskCreateRequest,
     TaskCreateResponse,
@@ -158,6 +159,15 @@ def create_app(
         if trace is None:
             raise _not_found(task_id)
         return trace
+
+    @application.get(
+        "/health",
+        response_model=HealthResponse,
+    )
+    async def get_health() -> HealthResponse:
+        """返回不触发 Agent、GitHub 或复杂数据库查询的部署健康状态。"""
+
+        return HealthResponse(status="healthy", service="issueops-agent")
 
     @application.get(
         "/status",

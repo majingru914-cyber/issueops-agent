@@ -290,6 +290,34 @@ def test_status_reports_persisted_terminal_counts(tmp_path: Path) -> None:
     assert final["total_tasks"] == 1
 
 
+def test_health_is_lightweight_and_has_stable_contract(tmp_path: Path) -> None:
+    """部署 health endpoint 应返回固定响应且不运行 Agent。"""
+
+    runner_called = False
+
+    def forbidden_runner(*_args: object, **_kwargs: object) -> dict[str, Any]:
+        nonlocal runner_called
+        runner_called = True
+        raise AssertionError("health 不得运行 Agent。")
+
+    runtime = build_tool_runtime(tmp_path)
+    app = create_app(
+        database_path=tmp_path / "health.db",
+        tool_runtime=runtime,
+        runner=forbidden_runner,
+        runtime_close=lambda: _close_runtime(runtime),
+    )
+    with TestClient(app) as client:
+        response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "healthy",
+        "service": "issueops-agent",
+    }
+    assert runner_called is False
+
+
 def test_invalid_requests_have_stable_error_contract(tmp_path: Path) -> None:
     """空白、缺失和未知字段均返回稳定 INVALID_REQUEST。"""
 

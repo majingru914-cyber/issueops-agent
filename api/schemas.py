@@ -70,6 +70,15 @@ class ServiceStatusResponse(BaseModel):
     total_tasks: int = Field(ge=0)
 
 
+class HealthResponse(BaseModel):
+    """部署层使用的轻量存活响应。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: str
+    service: str
+
+
 class TraceEventResponse(BaseModel):
     """一条按 sequence 排序的持久化执行事件。"""
 
