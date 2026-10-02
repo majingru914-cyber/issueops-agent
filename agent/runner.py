@@ -25,6 +25,7 @@ def run_agent(
     reflection_node: AgentNode | None = None,
     replanner_node: AgentNode | None = None,
     reflection_policy: ReflectionPolicy | None = None,
+    task_precreated: bool = False,
 ) -> dict[str, Any]:
     """运行一个 Agent 任务，并在启用时持久化完整生命周期。"""
 
@@ -35,8 +36,15 @@ def run_agent(
     }
     recorder = TaskRecorder(store, active_task_id) if store is not None else None
 
+    if task_precreated and store is None:
+        raise ValueError("task_precreated=True 时必须提供 SQLiteTaskStore。")
+
     if store is not None:
-        store.create_task(active_task_id, user_query)
+        if task_precreated:
+            if store.load_task(active_task_id) is None:
+                raise PersistenceError("预创建任务不存在。")
+        else:
+            store.create_task(active_task_id, user_query)
         store.save_state(active_task_id, "created", initial_state)
         store.save_trace(
             active_task_id,

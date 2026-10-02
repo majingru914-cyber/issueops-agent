@@ -20,6 +20,11 @@
   execution trace、重启查询、CLI 自动持久化和 `--load-task`。
 - Stage 08：完成独立评测层、20 用例版本化数据集、离线 Fixture、自动评分、
   聚合指标、失败分类、JSON/Markdown 报告和可重复性验证。
+- Stage 08 Git 边界：`main` 已 fast-forward 到 `ccf4780`，Stage 09 开始前
+  136 项基线测试通过，correctness 指标保持既有结果。
+- Stage 09：完成 FastAPI application factory、HTTP Schema、`AgentService`、
+  `POST /tasks`、`GET /tasks/{task_id}`、`GET /status`、`GET /trace`、
+  同步 Runner 的线程卸载、SQLite 查询、并发隔离、后台异常边界和 API 测试。
 
 ## 当前边界
 
@@ -131,10 +136,28 @@ GitHub 用例使用 `httpx.MockTransport`，不访问公网。当前代表性报
 20 个用例通过 19 个；`repo-007` 保留了 `EXECUTION_FAILED` 与预期
 `INVALID_ARGUMENT` 的真实分类差异，未因评测结果修改 Production Agent。
 
+Stage 09 的 HTTP 层不复制 Agent Pipeline。外部仅提交 `query`，服务先创建唯一
+`task_id` 并写入 `running`，再通过：
+
+```text
+FastAPI
+→ AgentService
+→ asyncio.create_task
+→ asyncio.to_thread(run_agent)
+→ LangGraph / ToolRuntime
+→ SQLiteTaskStore
+```
+
+执行现有单 Agent。进程内 registry 只保存正在运行的 `asyncio.Task` 引用；任务、
+结果与 trace 的持久化来源仍是 SQLite。每个后台 worker 和 HTTP 查询使用独立
+SQLite connection，满足单进程并发边界。运行中进程退出后的任务恢复、跨进程
+协调、Authentication、分页和分布式 Worker 不属于 Stage 09。
+
 ## 下一阶段
 
-- Stage 09：等待后续规格。
+- Stage 10：尚未开始；按后续规格处理 Docker 与独立 health 能力。
 
-当前没有实现 FastAPI、Async API、Docker、GitHub 写操作或
-Multi-Agent。Reviewer 与 Reflection 均不直接执行 Tool；Stage 05 Retry 语义未被
-Stage 06 Reflection 或 Stage 07 Persistence 改变。
+当前没有实现 Docker、Docker Compose、Kubernetes、Redis、Celery、分布式
+Worker、Frontend、Authentication、GitHub 写操作或 Multi-Agent。Reviewer 与
+Reflection 均不直接执行 Tool；Stage 05 Retry 语义未被 Stage 06 Reflection、
+Stage 07 Persistence 或 Stage 09 HTTP Service 改变。

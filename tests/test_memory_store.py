@@ -243,3 +243,23 @@ def test_missing_task_returns_none_and_foreign_key_is_enforced(tmp_path: Path) -
         assert store.load_task("missing") is None
         with pytest.raises(PersistenceError):
             store.save_state("missing", "created", {"task_id": "missing"})
+
+
+def test_store_counts_tasks_by_status(tmp_path: Path) -> None:
+    """服务统计所需的任务计数必须使用现有生命周期枚举。"""
+
+    with SQLiteTaskStore(tmp_path / "memory.db") as store:
+        store.create_task("running-task", "运行中")
+        store.save_task("running-task", {}, TaskStatus.RUNNING)
+        store.create_task("completed-task", "已完成")
+        store.save_task("completed-task", {}, TaskStatus.COMPLETED)
+        store.create_task("failed-task", "已失败")
+        store.save_task("failed-task", {}, TaskStatus.FAILED)
+
+        counts = store.count_tasks_by_status()
+
+    assert counts == {
+        TaskStatus.RUNNING: 1,
+        TaskStatus.COMPLETED: 1,
+        TaskStatus.FAILED: 1,
+    }

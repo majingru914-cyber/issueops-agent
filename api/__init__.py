@@ -1,1 +1,1 @@
-"""IssueOps API 包，接口能力将在后续阶段实现。"""
+"""IssueOps Agent HTTP 服务公共包。"""

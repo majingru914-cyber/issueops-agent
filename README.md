@@ -12,7 +12,9 @@ Agent。项目最终将支持任务分析、仓库检查、工具执行、证据
 Review Fail 会进入 Reflection，并由 Re-plan 只追加缺失步骤后重新执行。运行时
 `AgentState` 仍是唯一权威 Working Memory，SQLite 只保存任务、状态快照和执行
 trace 的持久化副本。独立的 Stage 08 离线评测基准使用 20 个版本化用例
-衡量任务、Tool、Retry、Reflection 和 Recovery 行为。
+衡量任务、Tool、Retry、Reflection 和 Recovery 行为。Stage 09 通过 FastAPI、
+`AgentService` 和 `asyncio.to_thread()` 将同一 Agent Runner 暴露为异步 HTTP
+任务服务，任务结果与 trace 仍以 SQLite 为持久化来源。
 
 ## 项目目标
 
@@ -92,7 +94,7 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 
 ## 当前状态
 
-**Current Status: Stage 08 — Agent Evaluation Benchmark**
+**Current Status: Stage 09 — FastAPI Agent Service**
 
 当前已实现：
 
@@ -141,6 +143,14 @@ Planner 与 Tool System 已通过 Executor 正式连接，但 ToolRuntime 仍保
 - 用例级异常隔离、失败分类、JSON/Markdown 报告与失败用例文档；
 - 任务成功率、用例通过率、Tool 选择/参数准确率、延迟、Retry、
   Reflection、Recovery 和可靠性事件指标。
+- FastAPI application factory 与独立的 Pydantic HTTP Schema；
+- `POST /tasks` 异步受理、`GET /tasks/{task_id}` 结果查询、`GET /trace`
+  执行证据查询和 `GET /status` 服务状态；
+- `asyncio.create_task()` 管理进程内后台生命周期，`asyncio.to_thread()`
+  桥接现有同步 `run_agent()`；
+- API、AgentState、SQLite task 和 execution trace 全程复用同一 `task_id`；
+- 每个后台执行和查询使用独立 SQLite connection，支持单进程并发任务隔离；
+- 稳定的 `INVALID_REQUEST`、`TASK_NOT_FOUND` 和 `INTERNAL_ERROR` HTTP 错误边界。
 
 Planner 是 Tool 选择和参数的权威来源；Executor 不从自然语言重新猜测 Tool，
 也不实现 Retry loop。Retry 与 Fallback 只存在于唯一的 `ToolRuntime.execute()`
@@ -189,6 +199,19 @@ User Request
 的节点输入、输出和路由。`task_id` 在 `AgentRunner` 启动时生成，Retry、Fallback、
 Reflection 和 Re-plan 全程复用同一个值。
 
+HTTP 服务链路为：
+
+```text
+Client
+→ FastAPI
+→ AgentService
+→ asyncio.create_task
+→ asyncio.to_thread(run_agent)
+→ LangGraph / ToolRuntime
+→ SQLiteTaskStore
+→ HTTP Query
+```
+
 GitHub Tool 仅执行读取操作，不会修改 Issue、发表评论、创建 PR 或写入仓库。
 
 ## 项目结构
@@ -209,7 +232,10 @@ issueops-agent/
 │   ├── runner.py       # 任务生命周期与可选持久化协调
 │   ├── schemas.py      # Pydantic 结构化模型
 │   └── state.py        # LangGraph 运行时状态
-├── api/                # 后续阶段使用
+├── api/
+│   ├── main.py         # FastAPI application factory 与路由
+│   ├── schemas.py      # HTTP Request / Response Schema
+│   └── service.py      # 异步任务、Runner bridge 与查询服务
 ├── docs/               # 项目文档
 ├── eval/
 │   ├── dataset.json    # 20 个版本化评测用例
@@ -246,6 +272,8 @@ issueops-agent/
 - `venv`
 - `pip`
 - `httpx`
+- `fastapi`
+- `uvicorn`
 
 ## 安装
 
@@ -386,6 +414,45 @@ result = runtime.execute(
 
 自动化测试使用 `httpx.MockTransport`，不访问公网，也不要求真实 Token。
 
+## API
+
+本地启动 HTTP 服务：
+
+```bash
+uvicorn api.main:app --host 127.0.0.1 --port 8000
+```
+
+创建任务会在 SQLite 中预先写入唯一 `task_id`，以 HTTP `202 Accepted` 快速
+返回 `running`；完整 Agent 在后台线程中继续执行：
+
+```bash
+curl -X POST http://127.0.0.1:8000/tasks \
+  -H "Content-Type: application/json" \
+  -d "{\"query\":\"查找项目中 AgentState 的定义\"}"
+```
+
+查询任务状态和过滤后的最终结果：
+
+```bash
+curl http://127.0.0.1:8000/tasks/<task_id>
+```
+
+查询 Stage 07 持久化的执行 trace：
+
+```bash
+curl "http://127.0.0.1:8000/trace?task_id=<task_id>"
+```
+
+查询当前单进程服务状态：
+
+```bash
+curl http://127.0.0.1:8000/status
+```
+
+`POST /tasks` 仅接受 `query`，拒绝 Agent 内部 `plan`、`tool_calls`、Review 或
+Reflection 字段。已完成任务在 application 重启后仍可通过相同 SQLite 文件查询；
+运行中任务的跨进程恢复不属于 Stage 09。完整 Contract 见 `docs/api.md`。
+
 ## Persistent Memory
 
 `SQLiteTaskStore` 的主要接口为：
@@ -465,9 +532,10 @@ python -m pytest -v
 - Stage 06：Reviewer、Reflection、增量 Re-plan 与完整核心 Agent 闭环；
 - Stage 07：Working Memory、SQLite Persistent Memory、历史与 trace 查询；
 - Stage 08：独立、离线、可重复的 Agent Evaluation Benchmark；
-- Stage 09 及后续阶段：按后续规格继续扩展。
+- Stage 09：FastAPI、异步任务执行、SQLite 查询、并发隔离与稳定错误 Contract；
+- Stage 10 及后续阶段：按后续规格继续扩展。
 
-当前尚未实现 FastAPI、Async API、Docker 或 Multi-Agent。
+当前尚未实现 Docker、分布式 Worker、任务恢复、Authentication 或 Multi-Agent。
 README 中的后续能力仅表示规划，不代表已经实现。
 
 ## 已知可靠性边界
@@ -486,6 +554,11 @@ README 中的后续能力仅表示规划，不代表已经实现。
   保护，仍会随循环增加状态体积；
 - 当前 Store 面向单机同步 MVP。单进程内 sequence 写入具有事务保护，但没有提供
   多进程写入协调、分布式锁或服务端数据库语义；
+- HTTP 后台任务引用只保存在当前 FastAPI 进程内；进程在任务运行中退出时不会
+  自动恢复该任务，已完成任务仍可从 SQLite 查询；
+- 同步 Agent 使用默认线程池执行，高并发下可能出现 thread pool 饱和；
+- `GET /trace` 当前一次返回完整 trace，尚未提供 pagination；
+- Stage 09 未实现 Authentication，服务只适合受信任的本地或受控网络环境；
 - 每个有意义节点保存完整 State snapshot，便于恢复和审计，但任务量或 Evidence
   很大时数据库会持续增长，当前没有自动归档与压缩；
 - `--load-task` 用于恢复读取与检查，不会自动从历史中间节点续跑 Graph；

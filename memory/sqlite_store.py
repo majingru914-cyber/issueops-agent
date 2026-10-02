@@ -392,6 +392,21 @@ class SQLiteTaskStore:
             latest_state=self.load_latest_state(task_id),
         )
 
+    def count_tasks_by_status(self) -> dict[TaskStatus, int]:
+        """返回各生命周期状态的任务数量，供服务状态查询使用。"""
+
+        connection = self._require_connection()
+        try:
+            rows = connection.execute(
+                "SELECT status, COUNT(*) AS task_count FROM tasks GROUP BY status"
+            ).fetchall()
+        except sqlite3.Error as error:
+            self._raise("count_tasks_by_status", error)
+        return {
+            TaskStatus(row["status"]): int(row["task_count"])
+            for row in rows
+        }
+
     def close(self) -> None:
         """幂等关闭数据库连接。"""
 
