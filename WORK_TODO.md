@@ -32,6 +32,21 @@
   packaging contract 测试；已实际完成 Image build、Container health/status、
   异步任务执行、Trace、优雅停止，以及使用同一 named volume 跨 Container 恢复
   Task、Final Answer 和 Trace 的 E2E 验证。
+- Stage 10 Git 边界：`main` 已通过 `ff-only` 合并到 `6836c82`；Stage 11
+  开始前 151 项基线测试通过，Evaluation correctness 保持 19/20。
+
+## Stage 11 当前状态
+
+- 分支：`release/11-v0.1.0`；
+- 版本：Python Project `0.1.0`，目标 Git Tag `v0.1.0`，目标 Docker Image
+  `issueops-agent:v0.1.0`；
+- 已完成 README、Architecture、Demo Transcript/Script、Roadmap、MIT License、
+  Release Notes、Release Checklist 和 5 项 Release Contract 测试；
+- 当前全量测试为 156 passed；两次 Evaluation correctness 一致，保持 19/20；
+- `issueops-agent:v0.1.0` 已实际 build，Release Container 的 Health、Status、
+  异步 Task、Poll 和 Trace smoke 通过；Image/History/Filesystem/Logs Secret Audit
+  均无真实凭据命中；
+- Release Commit、main 合并、Tag 和远端状态仍以后续实际命令为准，不预先声明完成。
 
 ## 当前边界
 
@@ -177,9 +192,10 @@ Container 使用 non-root `issueops` 用户。`.env`、开发 SQLite、Git metad
 `--env-file` 在 runtime 注入。`/health` 只表达 deployment health，`/status` 继续
 表达 application task statistics。
 
-## 下一阶段
+## Release 后续
 
-- Stage 11：尚未开始，等待后续规格。
+- Stage 11 完成后停止 Feature Development；后续候选工作只记录在
+  `docs/roadmap.md`，不在 v0.1.0 Release 中实现。
 
 当前没有实现 Docker Compose、Kubernetes、Redis、Celery、分布式 Worker、
 Nginx、Cloud Deployment、Frontend、Authentication、GitHub 写操作或 Multi-Agent。Reviewer 与

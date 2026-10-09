@@ -1,4 +1,4 @@
-# Stage 08 Agent 评测基准
+# IssueOps Agent v0.1.0 评测基准
 
 ## 目标与边界
 
@@ -76,7 +76,7 @@ python -m eval.evaluator --dataset eval/dataset.json --reports-dir eval/reports 
 - `eval/reports/evaluation-report.md`：人类可读摘要、指标、分类结果和局限；
 - `docs/failure_cases.md`：当前失败用例的输入、预期、实际、根因和改进建议。
 
-## 当前基线与解读
+## v0.1.0 正式基线与解读
 
 当前 20 个用例通过 19 个，用例通过率为 95%。正常完成路径、Tool 选择和 Tool 参数的当前准确率均为 100%。唯一失败 `repo-007` 正确进入 `partial` 路径，但路径边界错误的生产分类为 `EXECUTION_FAILED`，而数据集期望 `INVALID_ARGUMENT`。Stage 08 保留这一真实差异，不为提高评分而修改 Production Agent。
 
