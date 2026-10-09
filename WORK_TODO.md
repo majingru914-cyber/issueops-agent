@@ -48,7 +48,11 @@
   均无真实凭据命中；
 - Release preparation commit 已创建：`de3c247`；从该 commit 重建的
   `issueops-agent:v0.1.0` 再次完成新任务与 Trace smoke；
-- main 合并、Tag 和远端状态仍以后续实际命令为准，不预先声明完成。
+- `release/11-v0.1.0` 已通过 `ff-only` 合并到 `main`；最终本地提交完成后创建
+  annotated tag `v0.1.0`；
+- GitHub 远端两次预检分别遇到 `Empty reply from server` 与 connection reset，且
+  本机未安装 `gh`，因此真实状态为：Engineering Release Ready / GitHub Remote
+  Release Pending。
 
 ## 当前边界
 

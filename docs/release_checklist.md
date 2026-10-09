@@ -22,10 +22,10 @@
 ## Release State
 
 - [x] Stage 11 Release preparation commit：`de3c247`
-- [ ] `release/11-v0.1.0` fast-forward 合并到 `main`
-- [ ] local `v0.1.0` annotated tag
-- [ ] `origin/main` push
-- [ ] `origin/v0.1.0` push
-- [ ] GitHub Release
+- [x] `release/11-v0.1.0` fast-forward 合并到 `main`
+- [x] local `v0.1.0` annotated tag（由本清单所在最终提交完成后创建）
+- [ ] `origin/main` push：HTTPS 连接被远端重置
+- [ ] `origin/v0.1.0` push：等待 `origin/main`
+- [ ] GitHub Release：本机未安装 `gh`，且远端 Push 尚未完成
 
-最终远端状态必须以 GitHub 和 Release Report 为准，不因准备计划而预先勾选。
+当前状态为 **Engineering Release Ready / GitHub Remote Release Pending**。最终远端状态必须以 GitHub 和 Release Report 为准，不因准备计划而预先勾选。
