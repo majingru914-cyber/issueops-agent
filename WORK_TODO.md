@@ -29,7 +29,9 @@
   146 项测试通过，Evaluation correctness baseline 保持 19/20。
 - Stage 10：实现 `Dockerfile`、`.dockerignore`、non-root 单进程 Uvicorn、
   `/health`、`/app/data` SQLite Volume、runtime environment 注入和 Docker
-  packaging contract 测试；Docker Engine E2E 验证以实际执行结果为准。
+  packaging contract 测试；已实际完成 Image build、Container health/status、
+  异步任务执行、Trace、优雅停止，以及使用同一 named volume 跨 Container 恢复
+  Task、Final Answer 和 Trace 的 E2E 验证。
 
 ## 当前边界
 

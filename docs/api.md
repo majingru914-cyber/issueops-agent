@@ -204,4 +204,4 @@ SQL、stack trace、Token 或 Authorization 内容。
 - Python 无法强制终止已经超时但仍在执行的同步 Tool thread；
 - `GET /trace` 未分页，大型 trace 会形成较大响应；
 - 未实现 Authentication、CORS policy system、rate limiting 或公网部署保护；
-- 未实现 Docker、Redis、Celery、WebSocket、Frontend 或 Multi-Agent。
+- 未实现 Redis、Celery、WebSocket、Frontend 或 Multi-Agent。
