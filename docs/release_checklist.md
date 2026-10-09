@@ -21,7 +21,7 @@
 
 ## Release State
 
-- [ ] Stage 11 Release commit
+- [x] Stage 11 Release preparation commit：`de3c247`
 - [ ] `release/11-v0.1.0` fast-forward 合并到 `main`
 - [ ] local `v0.1.0` annotated tag
 - [ ] `origin/main` push

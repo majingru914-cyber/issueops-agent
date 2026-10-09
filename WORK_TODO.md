@@ -46,7 +46,9 @@
 - `issueops-agent:v0.1.0` 已实际 build，Release Container 的 Health、Status、
   异步 Task、Poll 和 Trace smoke 通过；Image/History/Filesystem/Logs Secret Audit
   均无真实凭据命中；
-- Release Commit、main 合并、Tag 和远端状态仍以后续实际命令为准，不预先声明完成。
+- Release preparation commit 已创建：`de3c247`；从该 commit 重建的
+  `issueops-agent:v0.1.0` 再次完成新任务与 Trace smoke；
+- main 合并、Tag 和远端状态仍以后续实际命令为准，不预先声明完成。
 
 ## 当前边界
 

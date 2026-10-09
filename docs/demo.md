@@ -63,11 +63,11 @@ Request：
 {"query":"查找项目中 AgentState 的定义"}
 ```
 
-真实响应在 10 ms 内返回：
+最终 Release commit 对应 Image 的真实响应在 9 ms 内返回：
 
 ```json
 {
-  "task_id": "c28070c951f44803bbe300e7ad2ed419",
+  "task_id": "354349f29ef44eaeaeddd965544ecff4",
   "status": "running"
 }
 ```
@@ -78,7 +78,7 @@ Request：
 
 ```json
 {
-  "task_id": "c28070c951f44803bbe300e7ad2ed419",
+  "task_id": "354349f29ef44eaeaeddd965544ecff4",
   "status": "completed",
   "review_passed": true,
   "reflection_count": 0,
